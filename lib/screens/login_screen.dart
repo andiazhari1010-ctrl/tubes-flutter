@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
-import 'main_shell.dart';
+import 'role_selection_screen.dart'; // ← ganti dari main_shell.dart
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -15,10 +15,11 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscure = true;
   bool _isLogin = true;
 
+  // ── Setelah submit, arahkan ke pilih role ──────────────────────────────
   void _submit() {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const MainShell()),
+      MaterialPageRoute(builder: (_) => const RoleSelectionScreen()),
     );
   }
 
@@ -47,9 +48,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const Text(
                 'Gamified Task Management',
                 style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.t3,
-                    letterSpacing: 0.5),
+                    fontSize: 13, color: AppColors.t3, letterSpacing: 0.5),
               ),
               const SizedBox(height: 48),
 
@@ -70,7 +69,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 obscure: _obscure,
                 suffix: IconButton(
                   icon: Icon(
-                    _obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                    _obscure
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
                     color: AppColors.t3,
                     size: 18,
                   ),
@@ -85,13 +86,13 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: TextButton(
                     onPressed: () {},
                     child: const Text('Lupa password?',
-                        style: TextStyle(
-                            fontSize: 12, color: AppColors.accent2)),
+                        style:
+                            TextStyle(fontSize: 12, color: AppColors.accent2)),
                   ),
                 ),
               const SizedBox(height: 8),
 
-              // Submit btn
+              // Submit button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -116,18 +117,20 @@ class _LoginScreenState extends State<LoginScreen> {
               // Divider
               Row(
                 children: [
-                  Expanded(child: Divider(color: AppColors.border, thickness: 0.5)),
+                  Expanded(
+                      child: Divider(color: AppColors.border, thickness: 0.5)),
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 12),
                     child: Text('atau',
                         style: TextStyle(fontSize: 11, color: AppColors.t3)),
                   ),
-                  Expanded(child: Divider(color: AppColors.border, thickness: 0.5)),
+                  Expanded(
+                      child: Divider(color: AppColors.border, thickness: 0.5)),
                 ],
               ),
               const SizedBox(height: 16),
 
-              // Google btn
+              // Google button
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
@@ -151,11 +154,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    _isLogin
-                        ? 'Belum punya akun? '
-                        : 'Sudah punya akun? ',
-                    style: const TextStyle(
-                        fontSize: 12, color: AppColors.t3),
+                    _isLogin ? 'Belum punya akun? ' : 'Sudah punya akun? ',
+                    style: const TextStyle(fontSize: 12, color: AppColors.t3),
                   ),
                   GestureDetector(
                     onTap: () => setState(() => _isLogin = !_isLogin),
