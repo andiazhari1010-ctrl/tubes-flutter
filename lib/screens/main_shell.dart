@@ -17,12 +17,7 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _index = 0;
 
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    TasksScreen(),
-    PartyScreen(),
-    HeroScreen(),
-  ];
+  // Removed unused _screens list
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +25,12 @@ class _MainShellState extends State<MainShell> {
       create: (_) => AppState(),
       child: Scaffold(
         backgroundColor: AppColors.c0,
-        body: IndexedStack(index: _index, children: _screens),
+        body: IndexedStack(index: _index, children: [
+          HomeScreen(onShopPressed: () => setState(() => _index = 3)),
+          const TasksScreen(),
+          const PartyScreen(),
+          const HeroScreen(),
+        ]),
         bottomNavigationBar: Container(
           decoration: BoxDecoration(
             color: const Color(0xF50D0D1A),

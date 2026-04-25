@@ -3,17 +3,18 @@ import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../models/app_state.dart';
 import '../widgets/common_widgets.dart';
+import 'notifications_screen.dart';
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  final VoidCallback? onShopPressed;
+  const HomeScreen({super.key, this.onShopPressed});
 
   @override
   Widget build(BuildContext context) {
     return Consumer<AppState>(
       builder: (context, state, _) {
         final hero = state.hero;
-        final todayTasks =
-            state.todos.where((t) => t.subtitle.contains('Hari ini')).toList();
+        final todayTasks = state.dailyTasks; // Gunakan Daily Tasks untuk hari ini
 
         return Scaffold(
           backgroundColor: AppColors.c0,
@@ -52,23 +53,35 @@ class HomeScreen extends StatelessWidget {
                           Stack(
                             clipBehavior: Clip.none,
                             children: [
-                              _iconBtn('🔔'),
-                              Positioned(
-                                top: -2, right: -2,
-                                child: Container(
-                                  width: 8, height: 8,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.red,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                        color: AppColors.c0, width: 1.5),
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.push(context, MaterialPageRoute(builder: (_) => ChangeNotifierProvider.value(
+                                    value: state,
+                                    child: const NotificationsScreen(),
+                                  )));
+                                },
+                                child: _iconBtn('🔔'),
+                              ),
+                              if (state.notifications.any((n) => !n.isRead))
+                                Positioned(
+                                  top: -2, right: -2,
+                                  child: Container(
+                                    width: 8, height: 8,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.red,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                          color: AppColors.c0, width: 1.5),
+                                    ),
                                   ),
                                 ),
-                              ),
                             ],
                           ),
                           const SizedBox(width: 8),
-                          _iconBtn('🛒'),
+                          GestureDetector(
+                            onTap: onShopPressed,
+                            child: _iconBtn('🛒'),
+                          ),
                         ],
                       ),
                     ],
@@ -195,14 +208,28 @@ class HomeScreen extends StatelessWidget {
                       ),
 
                       const SectionTitle('Active Quest'),
-                      ...state.quests
-                          .map((q) => QuestCard(quest: q)),
+                      if (state.quests.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8),
+                          child: Text('Belum ada quest aktif dari Admin.', style: TextStyle(color: AppColors.t3, fontSize: 12)),
+                        )
+                      else
+                        ...state.quests.map((q) => QuestCard(
+                              quest: q,
+                              onContribute: () => state.contributeToQuest(q.id),
+                            )),
 
                       const SectionTitle('Today'),
-                      ...todayTasks.map((t) => TaskItem(
-                            task: t,
-                            onTap: () => state.toggleTask(t),
-                          )),
+                      if (todayTasks.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8),
+                          child: Text('Tidak ada tugas harian (Daily) untuk hari ini. Tambahkan di tab Tasks!', style: TextStyle(color: AppColors.t3, fontSize: 12)),
+                        )
+                      else
+                        ...todayTasks.map((t) => TaskItem(
+                              task: t,
+                              onTap: () => state.toggleTask(t),
+                            )),
 
                       const SizedBox(height: 16),
                     ],

@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "592035396956",
+    "firebase_url": "https://heroquest-6a0e5-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "heroquest-6a0e5",
+    "storage_bucket": "heroquest-6a0e5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:592035396956:android:f5fc3a00a46ab8c655d599",
+        "android_client_info": {
+          "package_name": "com.example.heroquest"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCd2tRNj-imAL2HvWEylLh6uqAXbY7f3Wo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

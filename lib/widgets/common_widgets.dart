@@ -349,18 +349,22 @@ class HabitItem extends StatelessWidget {
 // ─── Quest Card ────────────────────────────────────────────────────────────
 class QuestCard extends StatelessWidget {
   final QuestModel quest;
-  const QuestCard({super.key, required this.quest});
+  final VoidCallback? onContribute;
+  
+  const QuestCard({super.key, required this.quest, this.onContribute});
 
   @override
   Widget build(BuildContext context) {
     final barColor = quest.isBoss ? AppColors.red : AppColors.accent;
+    final bool isCompleted = quest.progress >= 100;
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 9),
       padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
         color: AppColors.c1,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border, width: 0.5),
+        border: Border.all(color: isCompleted ? AppColors.gold.withOpacity(0.5) : AppColors.border, width: 0.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -370,10 +374,10 @@ class QuestCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(quest.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
-                        color: AppColors.t1)),
+                        color: isCompleted ? AppColors.gold : AppColors.t1)),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -394,20 +398,36 @@ class QuestCard extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(99),
             child: LinearProgressIndicator(
-              value: quest.progress / 100,
+              value: (quest.progress / 100).clamp(0.0, 1.0),
               minHeight: 4,
               backgroundColor: Colors.white.withOpacity(0.07),
-              valueColor: AlwaysStoppedAnimation<Color>(barColor),
+              valueColor: AlwaysStoppedAnimation<Color>(isCompleted ? AppColors.gold : barColor),
             ),
           ),
-          const SizedBox(height: 5),
+          const SizedBox(height: 10),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('${quest.progress}% selesai',
-                  style: const TextStyle(fontSize: 10, color: AppColors.t3)),
-              Text(quest.timeLeft,
-                  style: const TextStyle(fontSize: 10, color: AppColors.t3)),
+              Text(isCompleted ? 'Selesai!' : '${quest.progress}% selesai',
+                  style: TextStyle(fontSize: 10, color: isCompleted ? AppColors.gold : AppColors.t3, fontWeight: isCompleted ? FontWeight.bold : FontWeight.normal)),
+              
+              if (!isCompleted && onContribute != null)
+                GestureDetector(
+                  onTap: onContribute,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.c2,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: barColor.withOpacity(0.5)),
+                    ),
+                    child: Text(quest.isBoss ? 'Serang Boss ⚔️' : 'Kerjakan 🚀', 
+                      style: TextStyle(fontSize: 10, color: barColor, fontWeight: FontWeight.bold)),
+                  ),
+                )
+              else if (!isCompleted)
+                Text(quest.timeLeft,
+                    style: const TextStyle(fontSize: 10, color: AppColors.t3)),
             ],
           ),
         ],

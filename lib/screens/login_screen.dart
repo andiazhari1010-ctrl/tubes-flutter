@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
-import 'main_shell.dart';
+import '../services/auth_service.dart';
+import '../main.dart'; // Import AuthWrapper
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,14 +13,41 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
+  final _nameCtrl = TextEditingController();
   bool _obscure = true;
   bool _isLogin = true;
+  bool _isLoading = false;
 
-  void _submit() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const MainShell()),
-    );
+  void _submit() async {
+    if (_emailCtrl.text.isEmpty || _passCtrl.text.isEmpty) return;
+    
+    setState(() => _isLoading = true);
+    try {
+      if (_isLogin) {
+        await AuthService().login(_emailCtrl.text.trim(), _passCtrl.text);
+      } else {
+        if (_nameCtrl.text.isEmpty) {
+          throw Exception('Nama hero harus diisi');
+        }
+        await AuthService().register(_emailCtrl.text.trim(), _passCtrl.text, _nameCtrl.text.trim());
+      }
+      
+      // Pindah ke AuthWrapper agar otomatis dicek admin/user
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const AuthWrapper()),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString(), style: const TextStyle(color: Colors.white)), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -52,6 +80,16 @@ class _LoginScreenState extends State<LoginScreen> {
                     letterSpacing: 0.5),
               ),
               const SizedBox(height: 48),
+
+              // Name (only for register)
+              if (!_isLogin) ...[
+                _buildInput(
+                  controller: _nameCtrl,
+                  hint: 'Nama Hero',
+                  icon: Icons.person_outline,
+                ),
+                const SizedBox(height: 12),
+              ],
 
               // Email
               _buildInput(
@@ -104,11 +142,16 @@ class _LoginScreenState extends State<LoginScreen> {
                         borderRadius: BorderRadius.circular(14)),
                     elevation: 0,
                   ),
-                  child: Text(
-                    _isLogin ? 'Masuk Sekarang' : 'Daftar Sekarang',
-                    style: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w600),
-                  ),
+                  child: _isLoading 
+                    ? const SizedBox(
+                        height: 20, width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : Text(
+                        _isLogin ? 'Masuk Sekarang' : 'Daftar Sekarang',
+                        style: const TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w600),
+                      ),
                 ),
               ),
               const SizedBox(height: 16),

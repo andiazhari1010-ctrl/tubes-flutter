@@ -4,6 +4,8 @@ import '../theme/app_theme.dart';
 import '../models/app_state.dart';
 import '../models/models.dart';
 import '../widgets/common_widgets.dart';
+import '../services/auth_service.dart';
+import '../main.dart';
 
 class HeroScreen extends StatelessWidget {
   const HeroScreen({super.key});
@@ -14,6 +16,16 @@ class HeroScreen extends StatelessWidget {
     (HeroClass.healer, '💚', 'Healer', 'HP regen. Buff anggota party.'),
     (HeroClass.rogue, '🏹', 'Rogue', '+25% Gold. Critical hit chance.'),
   ];
+
+  void _logout(BuildContext context) async {
+    await AuthService().logout();
+    if (context.mounted) {
+      Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const AuthWrapper()),
+        (route) => false,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,17 +38,20 @@ class HeroScreen extends StatelessWidget {
           appBar: AppBar(
             title: const Text('Hero'),
             actions: [
-              Container(
-                margin: const EdgeInsets.only(right: 16),
-                width: 34, height: 34,
-                decoration: BoxDecoration(
-                  color: AppColors.c2,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border, width: 0.5),
-                ),
-                child: const Center(
-                  child: Icon(Icons.settings_outlined,
-                      color: AppColors.t2, size: 18),
+              GestureDetector(
+                onTap: () => _logout(context),
+                child: Container(
+                  margin: const EdgeInsets.only(right: 16),
+                  width: 34, height: 34,
+                  decoration: BoxDecoration(
+                    color: AppColors.c2,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.border, width: 0.5),
+                  ),
+                  child: const Center(
+                    child: Icon(Icons.logout_outlined,
+                        color: AppColors.red, size: 18),
+                  ),
                 ),
               ),
             ],

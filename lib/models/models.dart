@@ -1,7 +1,31 @@
 import 'package:flutter/material.dart' show Color;
+
 enum HeroClass { warrior, mage, healer, rogue }
 
+HeroClass heroClassFromString(String value) {
+  return HeroClass.values.firstWhere(
+    (e) => e.name == value,
+    orElse: () => HeroClass.warrior,
+  );
+}
+
 enum TaskPriority { high, medium, low }
+
+TaskPriority priorityFromString(String value) {
+  return TaskPriority.values.firstWhere(
+    (e) => e.name == value,
+    orElse: () => TaskPriority.medium,
+  );
+}
+
+enum TaskType { habit, daily, todo }
+
+TaskType taskTypeFromString(String value) {
+  return TaskType.values.firstWhere(
+    (e) => e.name == value,
+    orElse: () => TaskType.todo,
+  );
+}
 
 class HeroModel {
   String name;
@@ -21,16 +45,50 @@ class HeroModel {
     required this.name,
     required this.heroClass,
     this.level = 1,
-    this.hp = 72,
+    this.hp = 100,
     this.maxHp = 100,
-    this.xp = 580,
-    this.maxXp = 1000,
-    this.mp = 90,
-    this.maxMp = 100,
-    this.gold = 340,
-    this.gems = 25,
-    this.streak = 7,
+    this.xp = 0,
+    this.maxXp = 100,
+    this.mp = 50,
+    this.maxMp = 50,
+    this.gold = 0,
+    this.gems = 0,
+    this.streak = 0,
   });
+
+  factory HeroModel.fromJson(Map<String, dynamic> json) {
+    return HeroModel(
+      name: json['name'] ?? 'Unknown',
+      heroClass: heroClassFromString(json['heroClass'] ?? 'warrior'),
+      level: json['level'] ?? 1,
+      hp: json['hp'] ?? 100,
+      maxHp: json['maxHp'] ?? 100,
+      xp: json['xp'] ?? 0,
+      maxXp: json['maxXp'] ?? 100,
+      mp: json['mp'] ?? 50,
+      maxMp: json['maxMp'] ?? 50,
+      gold: json['gold'] ?? 0,
+      gems: json['gems'] ?? 0,
+      streak: json['streak'] ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'heroClass': heroClass.name,
+      'level': level,
+      'hp': hp,
+      'maxHp': maxHp,
+      'xp': xp,
+      'maxXp': maxXp,
+      'mp': mp,
+      'maxMp': maxMp,
+      'gold': gold,
+      'gems': gems,
+      'streak': streak,
+    };
+  }
 
   String get className {
     switch (heroClass) {
@@ -71,9 +129,32 @@ class TaskModel {
     this.priority = TaskPriority.medium,
     this.type = TaskType.todo,
   });
-}
 
-enum TaskType { habit, daily, todo }
+  factory TaskModel.fromJson(Map<String, dynamic> json, String docId) {
+    return TaskModel(
+      id: docId,
+      title: json['title'] ?? '',
+      subtitle: json['subtitle'] ?? '',
+      isDone: json['isDone'] ?? false,
+      xpReward: json['xpReward'] ?? 30,
+      goldReward: json['goldReward'] ?? 0,
+      priority: priorityFromString(json['priority'] ?? 'medium'),
+      type: taskTypeFromString(json['type'] ?? 'todo'),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'title': title,
+      'subtitle': subtitle,
+      'isDone': isDone,
+      'xpReward': xpReward,
+      'goldReward': goldReward,
+      'priority': priority.name,
+      'type': type.name,
+    };
+  }
+}
 
 class HabitModel {
   final String id;
@@ -89,6 +170,25 @@ class HabitModel {
     this.streak = 0,
     this.xpReward = 15,
   });
+
+  factory HabitModel.fromJson(Map<String, dynamic> json, String docId) {
+    return HabitModel(
+      id: docId,
+      title: json['title'] ?? '',
+      emoji: json['emoji'] ?? '🔥',
+      streak: json['streak'] ?? 0,
+      xpReward: json['xpReward'] ?? 15,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'title': title,
+      'emoji': emoji,
+      'streak': streak,
+      'xpReward': xpReward,
+    };
+  }
 }
 
 class QuestModel {
@@ -107,9 +207,31 @@ class QuestModel {
     this.timeLeft = '',
     this.isBoss = false,
   });
+
+  factory QuestModel.fromJson(Map<String, dynamic> json, String docId) {
+    return QuestModel(
+      id: docId,
+      title: json['title'] ?? '',
+      progress: json['progress'] ?? 0,
+      xpReward: json['xpReward'] ?? 100,
+      timeLeft: json['timeLeft'] ?? '',
+      isBoss: json['isBoss'] ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'title': title,
+      'progress': progress,
+      'xpReward': xpReward,
+      'timeLeft': timeLeft,
+      'isBoss': isBoss,
+    };
+  }
 }
 
 class PartyMember {
+  final String uid;
   final String name;
   final String emoji;
   final HeroClass heroClass;
@@ -119,6 +241,7 @@ class PartyMember {
   final Color avatarColor;
 
   const PartyMember({
+    required this.uid,
     required this.name,
     required this.emoji,
     required this.heroClass,
@@ -127,6 +250,31 @@ class PartyMember {
     required this.streak,
     required this.avatarColor,
   });
+
+  factory PartyMember.fromJson(Map<String, dynamic> json, String docId) {
+    return PartyMember(
+      uid: docId,
+      name: json['name'] ?? 'Unknown',
+      emoji: json['emoji'] ?? '👤',
+      heroClass: heroClassFromString(json['heroClass'] ?? 'warrior'),
+      level: json['level'] ?? 1,
+      xp: json['xp'] ?? 0,
+      streak: json['streak'] ?? 0,
+      avatarColor: Color(json['avatarColor'] ?? 0xFF185FA5),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'emoji': emoji,
+      'heroClass': heroClass.name,
+      'level': level,
+      'xp': xp,
+      'streak': streak,
+      'avatarColor': avatarColor.value,
+    };
+  }
 
   String get className {
     switch (heroClass) {
@@ -154,4 +302,64 @@ class ShopItem {
     required this.price,
     this.owned = false,
   });
+
+  factory ShopItem.fromJson(Map<String, dynamic> json, String docId) {
+    return ShopItem(
+      id: docId,
+      name: json['name'] ?? '',
+      description: json['description'] ?? '',
+      emoji: json['emoji'] ?? '📦',
+      price: json['price'] ?? 0,
+      owned: json['owned'] ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'description': description,
+      'emoji': emoji,
+      'price': price,
+      'owned': owned,
+    };
+  }
+}
+
+class NotificationModel {
+  final String id;
+  final String title;
+  final String body;
+  final String emoji;
+  final DateTime timestamp;
+  bool isRead;
+
+  NotificationModel({
+    required this.id,
+    required this.title,
+    required this.body,
+    required this.emoji,
+    required this.timestamp,
+    this.isRead = false,
+  });
+
+  factory NotificationModel.fromJson(Map<String, dynamic> json, String docId) {
+    return NotificationModel(
+      id: docId,
+      title: json['title'] ?? '',
+      body: json['body'] ?? '',
+      emoji: json['emoji'] ?? '🔔',
+      timestamp: json['timestamp'] != null ? (json['timestamp'] as dynamic).toDate() : DateTime.now(),
+      isRead: json['isRead'] ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'title': title,
+      'body': body,
+      'emoji': emoji,
+      'timestamp': timestamp,
+      'isRead': isRead,
+    };
+  }
 }
