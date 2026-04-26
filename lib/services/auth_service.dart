@@ -6,13 +6,10 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Mendapatkan state user (login/logout)
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-  // Mendapatkan data user yang sedang login
   User? get currentUser => _auth.currentUser;
 
-  // Login dengan Email & Password
   Future<UserCredential?> login(String email, String password) async {
     try {
       return await _auth.signInWithEmailAndPassword(

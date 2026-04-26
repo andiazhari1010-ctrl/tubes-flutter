@@ -1,1 +1,37 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"heroquest-6a0e5","appId":"1:592035396956:android:f5fc3a00a46ab8c655d599","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"heroquest-6a0e5","configurations":{"android":"1:592035396956:android:f5fc3a00a46ab8c655d599","ios":"1:592035396956:ios:e9d8425dbeb9ec0c55d599","web":"1:592035396956:web:1256e4fc51fe74b655d599"}}}}}}
+{
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "heroquest-6a0e5",
+          "appId": "1:592035396956:android:f5fc3a00a46ab8c655d599",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "heroquest-6a0e5",
+          "configurations": {
+            "android": "1:592035396956:android:f5fc3a00a46ab8c655d599",
+            "ios": "1:592035396956:ios:e9d8425dbeb9ec0c55d599",
+            "web": "1:592035396956:web:1256e4fc51fe74b655d599"
+          }
+        }
+      }
+    }
+  }
+}
