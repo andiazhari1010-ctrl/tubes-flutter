@@ -3,7 +3,10 @@ import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../models/app_state.dart';
 import '../widgets/common_widgets.dart';
+<<<<<<< HEAD
 import 'shop_screen.dart';
+=======
+>>>>>>> 5fd606cb57a6114a3116f136f5cf02c2f4a7e518
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -50,6 +53,7 @@ class HomeScreen extends StatelessWidget {
                       ),
                       Row(
                         children: [
+<<<<<<< HEAD
                           _iconBtn('🔔', onTap: () {}),
                           const SizedBox(width: 8),
                           _iconBtn('🛒', onTap: () {
@@ -58,12 +62,38 @@ class HomeScreen extends StatelessWidget {
                               MaterialPageRoute(builder: (_) => const ShopScreen()),
                             );
                           }),
+=======
+                          Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              _iconBtn('🔔'),
+                              Positioned(
+                                top: -2, right: -2,
+                                child: Container(
+                                  width: 8, height: 8,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.red,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                        color: AppColors.c0, width: 1.5),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(width: 8),
+                          _iconBtn('🛒'),
+>>>>>>> 5fd606cb57a6114a3116f136f5cf02c2f4a7e518
                         ],
                       ),
                     ],
                   ),
                 ),
+<<<<<<< HEAD
                 // Rest of the UI ...
+=======
+
+>>>>>>> 5fd606cb57a6114a3116f136f5cf02c2f4a7e518
                 Expanded(
                   child: ListView(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -205,6 +235,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+<<<<<<< HEAD
   Widget _iconBtn(String icon, {required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
@@ -218,6 +249,18 @@ class HomeScreen extends StatelessWidget {
         child: Center(
           child: Text(icon, style: const TextStyle(fontSize: 15)),
         ),
+=======
+  Widget _iconBtn(String icon) {
+    return Container(
+      width: 34, height: 34,
+      decoration: BoxDecoration(
+        color: AppColors.c2,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border, width: 0.5),
+      ),
+      child: Center(
+        child: Text(icon, style: const TextStyle(fontSize: 15)),
+>>>>>>> 5fd606cb57a6114a3116f136f5cf02c2f4a7e518
       ),
     );
   }

@@ -138,20 +138,27 @@ class PartyMember {
   }
 }
 
+<<<<<<< HEAD
 enum ItemCategory { weapon, armor, potion, accessory }
 enum ItemRarity { common, rare, epic, legendary }
 
+=======
+>>>>>>> 5fd606cb57a6114a3116f136f5cf02c2f4a7e518
 class ShopItem {
   final String id;
   final String name;
   final String description;
   final String emoji;
   final int price;
+<<<<<<< HEAD
   final ItemCategory category;
   final ItemRarity rarity;
   final Map<String, int> bonuses; // e.g. {'hp': 10, 'atk': 5}
   bool owned;
   bool isEquipped;
+=======
+  bool owned;
+>>>>>>> 5fd606cb57a6114a3116f136f5cf02c2f4a7e518
 
   ShopItem({
     required this.id,
@@ -159,6 +166,7 @@ class ShopItem {
     required this.description,
     required this.emoji,
     required this.price,
+<<<<<<< HEAD
     this.category = ItemCategory.potion,
     this.rarity = ItemRarity.common,
     this.bonuses = const {},
@@ -174,4 +182,8 @@ class ShopItem {
       case ItemRarity.legendary: return const Color(0xFFF4C430);
     }
   }
+=======
+    this.owned = false,
+  });
+>>>>>>> 5fd606cb57a6114a3116f136f5cf02c2f4a7e518
 }

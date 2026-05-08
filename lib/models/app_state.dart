@@ -36,6 +36,7 @@ class AppState extends ChangeNotifier {
   ];
 
   List<ShopItem> shopItems = [
+<<<<<<< HEAD
     ShopItem(id: 's1', name: 'Iron Sword', description: '+15 ATK · Pedang standar prajurit.', emoji: '🗡️', price: 80, category: ItemCategory.weapon, rarity: ItemRarity.common, bonuses: {'atk': 15}, owned: true, isEquipped: true),
     ShopItem(id: 's2', name: 'Study Shield', description: '+20 DEF · Melindungi dari deadline.', emoji: '🛡️', price: 120, category: ItemCategory.armor, rarity: ItemRarity.rare, bonuses: {'def': 20}, owned: true),
     ShopItem(id: 's3', name: 'HP Potion', description: 'Restore 30 HP', emoji: '🧪', price: 50, category: ItemCategory.potion, rarity: ItemRarity.common),
@@ -50,6 +51,14 @@ class AppState extends ChangeNotifier {
   int get extraAtk => shopItems.where((i) => i.isEquipped).fold(0, (sum, i) => sum + (i.bonuses['atk'] ?? 0));
   int get extraDef => shopItems.where((i) => i.isEquipped).fold(0, (sum, i) => sum + (i.bonuses['def'] ?? 0));
 
+=======
+    ShopItem(id: 's1', name: 'Iron Sword', description: '+15 ATK · Cocok untuk Warrior', emoji: '🗡️', price: 80),
+    ShopItem(id: 's2', name: 'Study Shield', description: '+20 DEF · Kurangi HP damage', emoji: '🛡️', price: 120),
+    ShopItem(id: 's3', name: 'HP Potion', description: 'Restore 30 HP', emoji: '🧪', price: 50),
+    ShopItem(id: 's4', name: 'XP Scroll', description: '+100 XP instan', emoji: '📜', price: 200),
+  ];
+
+>>>>>>> 5fd606cb57a6114a3116f136f5cf02c2f4a7e518
   List<PartyMember> partyMembers = const [
     PartyMember(name: 'Zhielton', emoji: '🧙', heroClass: HeroClass.mage, level: 15, xp: 2840, streak: 14, avatarColor: Color(0xFF185FA5)),
     PartyMember(name: 'Lingga', emoji: '⚔️', heroClass: HeroClass.warrior, level: 12, xp: 2580, streak: 7, avatarColor: Color(0xFF534AB7)),
@@ -91,6 +100,7 @@ class AppState extends ChangeNotifier {
     }
   }
 
+<<<<<<< HEAD
   void sellItem(ShopItem item) {
     if (item.owned) {
       item.owned = false;
@@ -125,6 +135,8 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+=======
+>>>>>>> 5fd606cb57a6114a3116f136f5cf02c2f4a7e518
   void changeClass(HeroClass newClass) {
     hero.heroClass = newClass;
     notifyListeners();
