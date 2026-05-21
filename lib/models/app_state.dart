@@ -1,44 +1,40 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/models.dart';
-import 'package:flutter/material.dart' show Color, ChangeNotifier;
 
 class AppState extends ChangeNotifier {
   HeroModel hero = HeroModel(
-    name: 'Lingga the Brave',
+    name: 'Novice Hero',
     heroClass: HeroClass.warrior,
-    level: 12,
+    level: 1,
+    hp: 100,
+    maxHp: 100,
+    xp: 0,
+    maxXp: 100,
+    mp: 50,
+    maxMp: 50,
+    gold: 0,
+    gems: 0,
+    streak: 0,
+    momentum: 0,
+    intelligence: 0,
+    strength: 0,
+    creativity: 0,
+    knowledge: 0,
+    focus: 0,
+    totalTasksCompleted: 0,
+    totalQuestsCompleted: 0,
   );
 
-  List<HabitModel> habits = [
-    HabitModel(id: 'h1', title: 'Belajar 2 jam', emoji: '🧠', streak: 7, xpReward: 20),
-    HabitModel(id: 'h2', title: 'Olahraga pagi', emoji: '🏃', streak: 3, xpReward: 15),
-    HabitModel(id: 'h3', title: 'Minum 8 gelas', emoji: '💧', streak: 12, xpReward: 10),
-    HabitModel(id: 'h4', title: 'Baca buku 30 mnt', emoji: '📖', streak: 0, xpReward: 10),
-  ];
-
-  List<TaskModel> dailyTasks = [
-    TaskModel(id: 'd1', title: 'Absen semua kelas', subtitle: 'Reset tiap hari', xpReward: 40, priority: TaskPriority.high, type: TaskType.daily),
-    TaskModel(id: 'd2', title: 'Review catatan kuliah', subtitle: 'Reset tiap hari', xpReward: 25, isDone: true, priority: TaskPriority.medium, type: TaskType.daily),
-    TaskModel(id: 'd3', title: 'Rapikan kamar', subtitle: 'Reset tiap hari', xpReward: 20, priority: TaskPriority.low, type: TaskType.daily),
-  ];
-
-  List<TaskModel> todos = [
-    TaskModel(id: 't1', title: 'Kerjakan tugas Basis Data', subtitle: '📅 Hari ini · Basis Data', xpReward: 50, goldReward: 20, priority: TaskPriority.high, type: TaskType.todo),
-    TaskModel(id: 't2', title: 'Review materi Jaringan', subtitle: '📅 Hari ini · Jaringan', xpReward: 30, isDone: true, priority: TaskPriority.medium, type: TaskType.todo),
-    TaskModel(id: 't3', title: 'Kumpulkan laporan praktikum', subtitle: '📅 2 hari · RPL', xpReward: 80, goldReward: 30, priority: TaskPriority.high, type: TaskType.todo),
-    TaskModel(id: 't4', title: 'Buat slide presentasi', subtitle: '📅 5 hari · APM', xpReward: 60, goldReward: 20, priority: TaskPriority.medium, type: TaskType.todo),
-    TaskModel(id: 't5', title: 'Baca paper penelitian', subtitle: '📅 7 hari · Riset', xpReward: 45, goldReward: 15, priority: TaskPriority.low, type: TaskType.todo),
-  ];
-
-  List<QuestModel> quests = [
-    QuestModel(id: 'q1', title: '📚 UTS Pemrograman Mobile', progress: 65, xpReward: 200, timeLeft: '3 hari tersisa'),
-    QuestModel(id: 'q2', title: '👾 Boss: Deadline Lv.3', progress: 30, xpReward: 500, timeLeft: 'Boss: 70% HP', isBoss: true),
-  ];
+  List<HabitModel> habits = [];
+  List<TaskModel> dailyTasks = [];
+  List<TaskModel> todos = [];
+  List<QuestModel> quests = [];
 
   List<ShopItem> shopItems = [
-<<<<<<< HEAD
-    ShopItem(id: 's1', name: 'Iron Sword', description: '+15 ATK · Pedang standar prajurit.', emoji: '🗡️', price: 80, category: ItemCategory.weapon, rarity: ItemRarity.common, bonuses: {'atk': 15}, owned: true, isEquipped: true),
-    ShopItem(id: 's2', name: 'Study Shield', description: '+20 DEF · Melindungi dari deadline.', emoji: '🛡️', price: 120, category: ItemCategory.armor, rarity: ItemRarity.rare, bonuses: {'def': 20}, owned: true),
+    ShopItem(id: 's1', name: 'Iron Sword', description: '+15 ATK · Pedang standar prajurit.', emoji: '🗡️', price: 80, category: ItemCategory.weapon, rarity: ItemRarity.common, bonuses: {'atk': 15}),
+    ShopItem(id: 's2', name: 'Study Shield', description: '+20 DEF · Melindungi dari deadline.', emoji: '🛡️', price: 120, category: ItemCategory.armor, rarity: ItemRarity.rare, bonuses: {'def': 20}),
     ShopItem(id: 's3', name: 'HP Potion', description: 'Restore 30 HP', emoji: '🧪', price: 50, category: ItemCategory.potion, rarity: ItemRarity.common),
     ShopItem(id: 's4', name: 'XP Scroll', description: '+100 XP instan', emoji: '📜', price: 200, category: ItemCategory.potion, rarity: ItemRarity.rare),
     ShopItem(id: 's5', name: 'Wizard Hat', description: '+25 Mana · Topi penyihir bintang.', emoji: '🧙', price: 250, category: ItemCategory.armor, rarity: ItemRarity.epic, bonuses: {'mp': 25}),
@@ -47,49 +43,275 @@ class AppState extends ChangeNotifier {
     ShopItem(id: 's8', name: 'Coffee Cup', description: 'Anti-Sleep · Restore 15 MP', emoji: '☕', price: 30, category: ItemCategory.potion, rarity: ItemRarity.common),
   ];
 
-  // Logic to get total stats
   int get extraAtk => shopItems.where((i) => i.isEquipped).fold(0, (sum, i) => sum + (i.bonuses['atk'] ?? 0));
   int get extraDef => shopItems.where((i) => i.isEquipped).fold(0, (sum, i) => sum + (i.bonuses['def'] ?? 0));
+  List<PartyMember> partyMembers = const [];
 
-=======
-    ShopItem(id: 's1', name: 'Iron Sword', description: '+15 ATK · Cocok untuk Warrior', emoji: '🗡️', price: 80),
-    ShopItem(id: 's2', name: 'Study Shield', description: '+20 DEF · Kurangi HP damage', emoji: '🛡️', price: 120),
-    ShopItem(id: 's3', name: 'HP Potion', description: 'Restore 30 HP', emoji: '🧪', price: 50),
-    ShopItem(id: 's4', name: 'XP Scroll', description: '+100 XP instan', emoji: '📜', price: 200),
-  ];
+  // In-app notifications
+  List<String> notifications = [];
+  bool hasClaimedDaily = false;
 
->>>>>>> 5fd606cb57a6114a3116f136f5cf02c2f4a7e518
-  List<PartyMember> partyMembers = const [
-    PartyMember(name: 'Zhielton', emoji: '🧙', heroClass: HeroClass.mage, level: 15, xp: 2840, streak: 14, avatarColor: Color(0xFF185FA5)),
-    PartyMember(name: 'Lingga', emoji: '⚔️', heroClass: HeroClass.warrior, level: 12, xp: 2580, streak: 7, avatarColor: Color(0xFF534AB7)),
-    PartyMember(name: 'Yafi', emoji: '🏹', heroClass: HeroClass.rogue, level: 11, xp: 2210, streak: 5, avatarColor: Color(0xFF0F6E56)),
-    PartyMember(name: 'Andy', emoji: '🛡️', heroClass: HeroClass.warrior, level: 10, xp: 1960, streak: 3, avatarColor: Color(0xFF854F0B)),
-    PartyMember(name: 'Disha', emoji: '💚', heroClass: HeroClass.healer, level: 9, xp: 1720, streak: 2, avatarColor: Color(0xFF993556)),
-  ];
+  AppState() {
+    // Listen to Firebase Auth state changes
+    FirebaseAuth.instance.authStateChanges().listen((user) {
+      if (user != null) {
+        loadFromFirestore();
+      } else {
+        // Reset state on logout
+        hero = HeroModel(
+          name: 'Novice Hero',
+          heroClass: HeroClass.warrior,
+          level: 1,
+          hp: 100,
+          maxHp: 100,
+          xp: 0,
+          maxXp: 100,
+          mp: 50,
+          maxMp: 50,
+          gold: 0,
+          gems: 0,
+          streak: 0,
+          momentum: 0,
+          intelligence: 0,
+          strength: 0,
+          creativity: 0,
+          knowledge: 0,
+          focus: 0,
+          totalTasksCompleted: 0,
+          totalQuestsCompleted: 0,
+        );
+        habits = [];
+        dailyTasks = [];
+        todos = [];
+        quests = [];
+        hasClaimedDaily = false;
+        notifyListeners();
+      }
+    });
+  }
+
+  void addNotification(String msg) {
+    notifications.add(msg);
+    notifyListeners();
+    Future.delayed(const Duration(seconds: 3), () {
+      notifications.remove(msg);
+      notifyListeners();
+    });
+  }
+
+  double get momentumMultiplier {
+    if (hero.momentum >= 80) return 1.5;
+    if (hero.momentum >= 50) return 1.25;
+    return 1.0;
+  }
+
+  // ── Firestore Sync ───────────────────────────────────────────────────
+
+  Future<void> saveToFirestore() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+        'hero': hero.toMap(),
+        'habits': habits.map((h) => h.toMap()).toList(),
+        'dailyTasks': dailyTasks.map((t) => t.toMap()).toList(),
+        'todos': todos.map((t) => t.toMap()).toList(),
+        'quests': quests.map((q) => q.toMap()).toList(),
+        'hasClaimedDaily': hasClaimedDaily,
+      }, SetOptions(merge: true));
+    } catch (e) {
+      print("Error saving to Firestore: $e");
+    }
+  }
+
+  Future<void> loadFromFirestore() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    try {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      if (doc.exists) {
+        final data = doc.data();
+        if (data != null) {
+          if (data['hero'] != null) {
+            hero = HeroModel.fromMap(Map<String, dynamic>.from(data['hero']));
+          }
+          if (data['habits'] != null) {
+            habits = (data['habits'] as List)
+                .map((h) => HabitModel.fromMap(Map<String, dynamic>.from(h)))
+                .toList();
+          }
+          if (data['dailyTasks'] != null) {
+            dailyTasks = (data['dailyTasks'] as List)
+                .map((t) => TaskModel.fromMap(Map<String, dynamic>.from(t)))
+                .toList();
+          }
+          if (data['todos'] != null) {
+            todos = (data['todos'] as List)
+                .map((t) => TaskModel.fromMap(Map<String, dynamic>.from(t)))
+                .toList();
+          }
+          if (data['quests'] != null) {
+            quests = (data['quests'] as List)
+                .map((q) => QuestModel.fromMap(Map<String, dynamic>.from(q)))
+                .toList();
+          } else {
+            // Default Quest if empty
+            quests = [
+              QuestModel(id: 'q1', title: 'Selesaikan 5 Tugas Hari Ini', progress: 0, xpReward: 150, timeLeft: '12 Jam Tersisa', isBoss: false),
+              QuestModel(id: 'q2', title: 'Kalahkan Midterm Exam Boss', progress: 0, xpReward: 300, timeLeft: '3 Hari Tersisa', isBoss: true),
+            ];
+          }
+          hasClaimedDaily = data['hasClaimedDaily'] ?? false;
+          notifyListeners();
+        }
+      } else {
+        // Document doesn't exist yet, populate with default quests
+        quests = [
+          QuestModel(id: 'q1', title: 'Selesaikan 5 Tugas Hari Ini', progress: 0, xpReward: 150, timeLeft: '12 Jam Tersisa', isBoss: false),
+          QuestModel(id: 'q2', title: 'Kalahkan Midterm Exam Boss', progress: 0, xpReward: 300, timeLeft: '3 Hari Tersisa', isBoss: true),
+        ];
+        saveToFirestore();
+      }
+    } catch (e) {
+      print("Error loading from Firestore: $e");
+    }
+  }
 
   // ── Actions ──────────────────────────────────────────────────────────
 
+  void claimDailyReward() {
+    if (!hasClaimedDaily) {
+      hero.streak += 1;
+      hasClaimedDaily = true;
+      int goldReward = hero.streak * 15;
+      int gemReward = (hero.streak % 7 == 0) ? 5 : 1;
+      hero.gold += goldReward;
+      hero.gems += gemReward;
+      
+      hero.momentum = (hero.momentum + 20).clamp(0, 100);
+
+      addNotification("📆 Daily Streak Claimed (+${hero.streak} Days)!");
+      addNotification("🪙 +$goldReward Gold / 💎 +$gemReward Gems");
+      addNotification("⚡ Momentum Restored!");
+      
+      notifyListeners();
+      saveToFirestore();
+    }
+  }
+
+  void resetDailyClaim() {
+    hasClaimedDaily = false;
+    notifyListeners();
+    saveToFirestore();
+  }
+
+  void _checkLevelUp() {
+    if (hero.xp >= hero.maxXp) {
+      hero.xp -= hero.maxXp;
+      hero.level += 1;
+      hero.maxXp = (hero.level * 100);
+      hero.maxHp = 100 + (hero.level * 10);
+      hero.hp = hero.maxHp;
+      hero.maxMp = 50 + (hero.level * 5);
+      hero.mp = hero.maxMp;
+      addNotification("🎉 LEVEL UP! Reached Level ${hero.level}");
+    }
+  }
+
+  void _incrementSkill(SkillAttribute attr) {
+    switch (attr) {
+      case SkillAttribute.intelligence: hero.intelligence += 1; break;
+      case SkillAttribute.strength: hero.strength += 1; break;
+      case SkillAttribute.creativity: hero.creativity += 1; break;
+      case SkillAttribute.knowledge: hero.knowledge += 1; break;
+      case SkillAttribute.focus: hero.focus += 1; break;
+    }
+  }
+
+  void _decrementSkill(SkillAttribute attr) {
+    switch (attr) {
+      case SkillAttribute.intelligence: hero.intelligence = (hero.intelligence - 1).clamp(0, 9999); break;
+      case SkillAttribute.strength: hero.strength = (hero.strength - 1).clamp(0, 9999); break;
+      case SkillAttribute.creativity: hero.creativity = (hero.creativity - 1).clamp(0, 9999); break;
+      case SkillAttribute.knowledge: hero.knowledge = (hero.knowledge - 1).clamp(0, 9999); break;
+      case SkillAttribute.focus: hero.focus = (hero.focus - 1).clamp(0, 9999); break;
+    }
+  }
+
+  void _updateQuestProgress() {
+    for (var q in quests) {
+      if (q.progress < 100) {
+        q.progress = (q.progress + 20).clamp(0, 100);
+        addNotification("⚔️ Quest Progress Updated");
+        if (q.progress >= 100) {
+          hero.xp = hero.xp + q.xpReward;
+          hero.totalQuestsCompleted += 1;
+          addNotification("🏆 Quest Completed: ${q.title}");
+          _checkLevelUp();
+        }
+        break;
+      }
+    }
+  }
+
   void toggleTask(TaskModel task) {
     task.isDone = !task.isDone;
+    double mult = momentumMultiplier;
+    
     if (task.isDone) {
-      hero.xp = (hero.xp + task.xpReward).clamp(0, hero.maxXp);
-      hero.gold += task.goldReward;
+      int xpGained = (task.xpReward * mult).toInt();
+      int goldGained = (task.goldReward * mult).toInt();
+      
+      hero.xp = (hero.xp + xpGained);
+      hero.gold += goldGained;
+      hero.totalTasksCompleted += 1;
+      hero.momentum = (hero.momentum + 15).clamp(0, 100);
+      
+      _incrementSkill(task.attribute);
+      _checkLevelUp();
+      _updateQuestProgress();
+
+      addNotification("✨ XP Gained (x$mult bonus!)");
+      addNotification("⚡ Gravity Resistance Increased");
     } else {
-      hero.xp = (hero.xp - task.xpReward).clamp(0, hero.maxXp);
-      hero.gold = (hero.gold - task.goldReward).clamp(0, 999999);
+      int xpLost = (task.xpReward * mult).toInt();
+      int goldLost = (task.goldReward * mult).toInt();
+      
+      hero.xp = (hero.xp - xpLost).clamp(0, hero.maxXp);
+      hero.gold = (hero.gold - goldLost).clamp(0, 999999);
+      hero.totalTasksCompleted = (hero.totalTasksCompleted - 1).clamp(0, 999999);
+      hero.momentum = (hero.momentum - 15).clamp(0, 100);
+      
+      _decrementSkill(task.attribute);
     }
     notifyListeners();
+    saveToFirestore();
   }
 
   void doHabit(HabitModel habit, bool positive) {
+    double mult = momentumMultiplier;
     if (positive) {
-      hero.xp = (hero.xp + habit.xpReward).clamp(0, hero.maxXp);
+      int xpGained = (habit.xpReward * mult).toInt();
+      hero.xp = (hero.xp + xpGained);
       hero.gold += 5;
       habit.streak++;
+      hero.momentum = (hero.momentum + 8).clamp(0, 100);
+      
+      _incrementSkill(habit.attribute);
+      _checkLevelUp();
+
+      addNotification("✨ XP Increased!");
+      addNotification("🔥 Habit Streak Up!");
     } else {
       hero.hp = (hero.hp - 6).clamp(0, hero.maxHp);
+      hero.momentum = (hero.momentum - 20).clamp(0, 100);
+      habit.streak = 0;
+
+      addNotification("💔 Health Reduced!");
+      addNotification("⚠️ Momentum Lost!");
     }
     notifyListeners();
+    saveToFirestore();
   }
 
   void buyItem(ShopItem item) {
@@ -97,16 +319,17 @@ class AppState extends ChangeNotifier {
       hero.gold -= item.price;
       item.owned = true;
       notifyListeners();
+      saveToFirestore();
     }
   }
 
-<<<<<<< HEAD
   void sellItem(ShopItem item) {
     if (item.owned) {
       item.owned = false;
       item.isEquipped = false;
       hero.gold += (item.price * 0.5).toInt();
       notifyListeners();
+      saveToFirestore();
     }
   }
 
@@ -114,18 +337,18 @@ class AppState extends ChangeNotifier {
     if (!item.owned) return;
     
     if (item.category == ItemCategory.potion) {
-      // Use potion & Consume it
       if (item.id == 's3') hero.hp = (hero.hp + 30).clamp(0, hero.maxHp);
-      if (item.id == 's4') hero.xp = (hero.xp + 100).clamp(0, hero.maxXp);
+      if (item.id == 's4') {
+        hero.xp = (hero.xp + 100);
+        _checkLevelUp();
+      }
       if (item.id == 's8') hero.mp = (hero.mp + 15).clamp(0, hero.maxMp);
       
-      item.owned = false; // Consumed
+      item.owned = false;
     } else {
-      // Toggle Equip
       if (item.isEquipped) {
         item.isEquipped = false;
       } else {
-        // Unequip others in same category
         for (var i in shopItems) {
           if (i.category == item.category) i.isEquipped = false;
         }
@@ -133,12 +356,34 @@ class AppState extends ChangeNotifier {
       }
     }
     notifyListeners();
+    saveToFirestore();
   }
 
-=======
->>>>>>> 5fd606cb57a6114a3116f136f5cf02c2f4a7e518
   void changeClass(HeroClass newClass) {
     hero.heroClass = newClass;
     notifyListeners();
+    saveToFirestore();
+  }
+
+  void updateHeroName(String newName) {
+    hero.name = newName;
+    notifyListeners();
+    saveToFirestore();
+  }
+
+  void addTask(TaskModel task) {
+    if (task.type == TaskType.daily) {
+      dailyTasks.add(task);
+    } else {
+      todos.add(task);
+    }
+    addNotification("🆕 Task Ditambahkan!");
+    saveToFirestore();
+  }
+
+  void addHabit(HabitModel habit) {
+    habits.add(habit);
+    addNotification("🆕 Habit Ditambahkan!");
+    saveToFirestore();
   }
 }

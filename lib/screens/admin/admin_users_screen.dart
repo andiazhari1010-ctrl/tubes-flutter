@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
+import '../../services/firestore_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
 
 class AdminUsersScreen extends StatefulWidget {
   const AdminUsersScreen({super.key});
@@ -16,72 +19,56 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
 
   final _filters = ['Semua', 'Aktif', 'Banned', 'Admin'];
 
-  final List<_UserData> _users = [
-    _UserData(
-        name: 'Tubagus Lingga',
-        email: 'lingga@student.telkomuniversity.ac.id',
-        heroClass: 'Warrior',
-        level: 12,
-        isActive: true,
-        isAdmin: false,
-        streak: 7,
-        gold: 340),
-    _UserData(
-        name: 'Muhammad Zhielton',
-        email: 'zhielton@student.telkomuniversity.ac.id',
-        heroClass: 'Mage',
-        level: 15,
-        isActive: true,
-        isAdmin: true,
-        streak: 14,
-        gold: 520),
-    _UserData(
-        name: 'Yafi Zakaria',
-        email: 'yafi@student.telkomuniversity.ac.id',
-        heroClass: 'Rogue',
-        level: 11,
-        isActive: true,
-        isAdmin: false,
-        streak: 5,
-        gold: 210),
-    _UserData(
-        name: 'Andy Azhari',
-        email: 'andy@student.telkomuniversity.ac.id',
-        heroClass: 'Warrior',
-        level: 10,
-        isActive: true,
-        isAdmin: false,
-        streak: 3,
-        gold: 180),
-    _UserData(
-        name: 'Disha Aziz',
-        email: 'disha@student.telkomuniversity.ac.id',
-        heroClass: 'Healer',
-        level: 9,
-        isActive: false,
-        isAdmin: false,
-        streak: 0,
-        gold: 90,
-        isBanned: true),
-    _UserData(
-        name: 'Agus Mahendra',
-        email: 'agus.m@student.telkomuniversity.ac.id',
-        heroClass: 'Mage',
-        level: 7,
-        isActive: true,
-        isAdmin: false,
-        streak: 2,
-        gold: 120),
-    _UserData(
-        name: 'Rizky Pratama',
-        email: 'rizky.p@student.telkomuniversity.ac.id',
-        heroClass: 'Rogue',
-        level: 5,
-        isActive: false,
-        isAdmin: false,
-        streak: 0,
-        gold: 60),
-  ];
+  List<_UserData> _users = [];
+
+  // Firestore listener
+  late final StreamSubscription<QuerySnapshot> _subscription;
+
+  @override
+  void initState() {
+    super.initState();
+    final service = FirestoreService();
+    _subscription = service.getAllUsersStream().listen((snapshot) {
+      final list = snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        final hero = data['hero'] as Map<String, dynamic>?;
+        return _UserData(
+          name: data['email']?.split('@').first ?? 'Unknown',
+          email: data['email'] ?? '',
+          heroClass: hero != null ? _classFromString(hero['heroClass'] ?? '') : 'Warrior',
+          level: hero != null ? (hero['level'] ?? 1) as int : 1,
+          isActive: (data['isActive'] ?? true) as bool,
+          isAdmin: (data['role'] == 'admin'),
+          streak: hero != null ? (hero['streak'] ?? 0) as int : 0,
+          gold: hero != null ? (hero['gold'] ?? 0) as int : 0,
+        );
+      }).toList();
+      setState(() {
+        _users = list;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
+
+  String _classFromString(String cls) {
+    switch (cls.toLowerCase()) {
+      case 'warrior':
+        return 'Warrior';
+      case 'mage':
+        return 'Mage';
+      case 'healer':
+        return 'Healer';
+      case 'rogue':
+        return 'Rogue';
+      default:
+        return 'Warrior';
+    }
+  }
 
   List<_UserData> get _filtered {
     return _users.where((u) {

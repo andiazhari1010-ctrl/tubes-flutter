@@ -3,10 +3,7 @@ import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../models/app_state.dart';
 import '../widgets/common_widgets.dart';
-<<<<<<< HEAD
 import 'shop_screen.dart';
-=======
->>>>>>> 5fd606cb57a6114a3116f136f5cf02c2f4a7e518
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -53,20 +50,10 @@ class HomeScreen extends StatelessWidget {
                       ),
                       Row(
                         children: [
-<<<<<<< HEAD
-                          _iconBtn('🔔', onTap: () {}),
-                          const SizedBox(width: 8),
-                          _iconBtn('🛒', onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => const ShopScreen()),
-                            );
-                          }),
-=======
                           Stack(
                             clipBehavior: Clip.none,
                             children: [
-                              _iconBtn('🔔'),
+                              _iconBtn('🔔', onTap: () {}),
                               Positioned(
                                 top: -2, right: -2,
                                 child: Container(
@@ -82,18 +69,18 @@ class HomeScreen extends StatelessWidget {
                             ],
                           ),
                           const SizedBox(width: 8),
-                          _iconBtn('🛒'),
->>>>>>> 5fd606cb57a6114a3116f136f5cf02c2f4a7e518
+                          _iconBtn('🛒', onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const ShopScreen()),
+                            );
+                          }),
                         ],
                       ),
                     ],
                   ),
                 ),
-<<<<<<< HEAD
-                // Rest of the UI ...
-=======
 
->>>>>>> 5fd606cb57a6114a3116f136f5cf02c2f4a7e518
                 Expanded(
                   child: ListView(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -124,10 +111,10 @@ class HomeScreen extends StatelessWidget {
                                             color: AppColors.accent,
                                             width: 2),
                                       ),
-                                      child: const Center(
-                                        child: Text('⚔️',
+                                      child: Center(
+                                        child: Text(hero.classEmoji,
                                             style:
-                                                TextStyle(fontSize: 26)),
+                                                const TextStyle(fontSize: 26)),
                                       ),
                                     ),
                                     Positioned(
@@ -190,6 +177,65 @@ class HomeScreen extends StatelessWidget {
                                 value: hero.mp,
                                 maxValue: hero.maxMp,
                                 color: AppColors.mp),
+                            
+                            // Momentum Glowing Bar
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 6),
+                              child: Row(
+                                children: [
+                                  const SizedBox(
+                                    width: 18,
+                                    child: Text('MM',
+                                        style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w800,
+                                            color: Color(0xFF00E5FF))),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Stack(
+                                      children: [
+                                        Container(
+                                          height: 6,
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(99),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: const Color(0xFF00E5FF).withOpacity(0.35),
+                                                blurRadius: 6,
+                                                spreadRadius: 0.5,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(99),
+                                          child: LinearProgressIndicator(
+                                            value: hero.momentum / 100.0,
+                                            minHeight: 6,
+                                            backgroundColor: Colors.white.withOpacity(0.07),
+                                            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF00E5FF)),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  SizedBox(
+                                    width: 70,
+                                    child: Text(
+                                      '${hero.momentum}%${state.momentumMultiplier > 1.0 ? " (x${state.momentumMultiplier})" : ""}',
+                                      textAlign: TextAlign.right,
+                                      style: const TextStyle(
+                                          fontSize: 9, 
+                                          fontWeight: FontWeight.w700, 
+                                          color: Color(0xFF00E5FF)),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
                             const SizedBox(height: 12),
                             Row(
                               children: [
@@ -209,6 +255,112 @@ class HomeScreen extends StatelessWidget {
                                     label: 'Streak'),
                               ],
                             ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 12),
+                      // ── Daily Streak Claim Card ────────────────────────
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.c2,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: state.hasClaimedDaily 
+                                ? AppColors.border 
+                                : AppColors.gold.withOpacity(0.4),
+                            width: 0.5,
+                          ),
+                          boxShadow: state.hasClaimedDaily ? [] : [
+                            BoxShadow(
+                              color: AppColors.gold.withOpacity(0.05),
+                              blurRadius: 10,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Text(
+                              state.hasClaimedDaily ? '📆' : '🔥',
+                              style: const TextStyle(fontSize: 24),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    state.hasClaimedDaily 
+                                        ? 'DAILY STREAK CLAIMED' 
+                                        : 'DAILY STREAK READY!',
+                                    style: TextStyle(
+                                      fontFamily: 'Cinzel',
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: state.hasClaimedDaily 
+                                          ? AppColors.t2 
+                                          : AppColors.gold,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    state.hasClaimedDaily
+                                        ? 'Kembali besok untuk mempertahankan streak Anda.'
+                                        : 'Klaim hadiah streak harian Anda sekarang!',
+                                    style: const TextStyle(fontSize: 9, color: AppColors.t3),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            if (!state.hasClaimedDaily)
+                              GestureDetector(
+                                onTap: () => state.claimDailyReward(),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [AppColors.gold, Color(0xFFFF9800)],
+                                    ),
+                                    borderRadius: BorderRadius.circular(10),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppColors.gold.withOpacity(0.3),
+                                        blurRadius: 8,
+                                        spreadRadius: 1,
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Text(
+                                    'KLAIM',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w800,
+                                      color: Color(0xFF2A1A00),
+                                    ),
+                                  ),
+                                ),
+                              )
+                            else
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: AppColors.c1,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: AppColors.border, width: 0.5),
+                                ),
+                                child: const Text(
+                                  'SELESAI',
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.t3,
+                                  ),
+                                ),
+                              ),
                           ],
                         ),
                       ),
@@ -235,7 +387,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-<<<<<<< HEAD
   Widget _iconBtn(String icon, {required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
@@ -249,18 +400,6 @@ class HomeScreen extends StatelessWidget {
         child: Center(
           child: Text(icon, style: const TextStyle(fontSize: 15)),
         ),
-=======
-  Widget _iconBtn(String icon) {
-    return Container(
-      width: 34, height: 34,
-      decoration: BoxDecoration(
-        color: AppColors.c2,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border, width: 0.5),
-      ),
-      child: Center(
-        child: Text(icon, style: const TextStyle(fontSize: 15)),
->>>>>>> 5fd606cb57a6114a3116f136f5cf02c2f4a7e518
       ),
     );
   }

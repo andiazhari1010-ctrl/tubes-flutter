@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-<<<<<<< HEAD
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'theme/app_theme.dart';
-import 'screens/onboarding_screen.dart';
+import 'screens/auth_wrapper.dart';
 import 'models/app_state.dart';
-=======
-import 'theme/app_theme.dart';
-import 'screens/onboarding_screen.dart';
->>>>>>> 5fd606cb57a6114a3116f136f5cf02c2f4a7e518
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -20,16 +22,12 @@ void main() {
       systemNavigationBarIconBrightness: Brightness.light,
     ),
   );
-<<<<<<< HEAD
   runApp(
     ChangeNotifierProvider(
       create: (_) => AppState(),
       child: const HeroQuestApp(),
     ),
   );
-=======
-  runApp(const HeroQuestApp());
->>>>>>> 5fd606cb57a6114a3116f136f5cf02c2f4a7e518
 }
 
 class HeroQuestApp extends StatelessWidget {
@@ -41,7 +39,7 @@ class HeroQuestApp extends StatelessWidget {
       title: 'HeroQuest',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.theme,
-      home: const OnboardingScreen(),
+      home: const AuthWrapper(),
     );
   }
 }

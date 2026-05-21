@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../theme/app_theme.dart';
 import 'main_shell.dart';
 import 'admin/admin_shell.dart';
@@ -38,9 +40,57 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
         context, MaterialPageRoute(builder: (_) => const MainShell()));
   }
 
-  void _goAdmin() {
-    Navigator.pushReplacement(
-        context, MaterialPageRoute(builder: (_) => const AdminShell()));
+  void _goAdmin() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(color: AppColors.gold),
+      ),
+    );
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) throw 'Pengguna tidak ditemukan. Silakan login kembali.';
+
+      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      if (!doc.exists) throw 'Profil pengguna tidak ditemukan di database.';
+
+      final role = doc.data()?['role'] ?? 'user';
+      if (mounted) Navigator.pop(context); // Close loading dialog
+
+      if (role == 'admin') {
+        if (mounted) {
+          Navigator.pushReplacement(
+              context, MaterialPageRoute(builder: (_) => const AdminShell()));
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('⚠️ Akses ditolak! Akun Anda bukan Administrator.'),
+              backgroundColor: AppColors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Close loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: AppColors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
+    }
   }
 
   @override

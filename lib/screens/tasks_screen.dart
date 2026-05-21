@@ -4,6 +4,7 @@ import '../theme/app_theme.dart';
 import '../models/app_state.dart';
 import '../models/models.dart';
 import '../widgets/common_widgets.dart';
+import 'focus_screen.dart';
 
 class TasksScreen extends StatelessWidget {
   const TasksScreen({super.key});
@@ -24,6 +25,28 @@ class TasksScreen extends StatelessWidget {
           appBar: AppBar(
             title: const Text('Tasks & Habits'),
             actions: [
+              // Focus Mode Trigger
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const FocusScreen()),
+                  );
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  width: 34, height: 34,
+                  decoration: BoxDecoration(
+                    color: AppColors.c2,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.border, width: 0.5),
+                  ),
+                  child: const Center(
+                    child: Text('🎯',
+                        style: TextStyle(fontSize: 16)),
+                  ),
+                ),
+              ),
               GestureDetector(
                 onTap: () => _showAddTaskSheet(context, state),
                 child: Container(
@@ -80,6 +103,7 @@ class TasksScreen extends StatelessWidget {
     final subCtrl = TextEditingController();
     TaskPriority priority = TaskPriority.medium;
     TaskType type = TaskType.todo;
+    SkillAttribute attribute = SkillAttribute.focus;
 
     showModalBottomSheet(
       context: context,
@@ -95,50 +119,87 @@ class TasksScreen extends StatelessWidget {
               left: 20, right: 20, top: 20,
               bottom: MediaQuery.of(ctx).viewInsets.bottom + 32,
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 36, height: 4,
-                    decoration: BoxDecoration(
-                      color: AppColors.t3,
-                      borderRadius: BorderRadius.circular(99),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 36, height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.t3,
+                        borderRadius: BorderRadius.circular(99),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                const Text('Tambah Task Baru',
-                    style: TextStyle(
-                      fontFamily: 'Cinzel',
-                      fontSize: 16,
-                      color: AppColors.t1,
-                    )),
-                const SizedBox(height: 16),
-                _sheetInput(titleCtrl, 'Judul task', Icons.title),
-                const SizedBox(height: 10),
-                _sheetInput(subCtrl, 'Subtitle / deadline', Icons.info_outline),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 16),
+                  const Text('Tambah Task Baru',
+                      style: TextStyle(
+                        fontFamily: 'Cinzel',
+                        fontSize: 16,
+                        color: AppColors.t1,
+                      )),
+                  const SizedBox(height: 16),
+                  _sheetInput(titleCtrl, 'Judul task', Icons.title),
+                  const SizedBox(height: 10),
+                  _sheetInput(subCtrl, 'Subtitle / deadline', Icons.info_outline),
+                  const SizedBox(height: 16),
 
-                // Type selector
-                const Text('Tipe',
-                    style: TextStyle(fontSize: 12, color: AppColors.t3)),
-                const SizedBox(height: 8),
-                Row(
-                  children: TaskType.values.map((t) {
-                    final labels = {
-                      TaskType.habit: '🌀 Habit',
-                      TaskType.daily: '📅 Daily',
-                      TaskType.todo: '📝 To-Do'
-                    };
-                    final sel = type == t;
-                    return Expanded(
-                      child: GestureDetector(
-                        onTap: () => setLocal(() => type = t),
+                  // Type selector
+                  const Text('Tipe',
+                      style: TextStyle(fontSize: 12, color: AppColors.t3)),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: TaskType.values.map((t) {
+                      final labels = {
+                        TaskType.habit: '🌀 Habit',
+                        TaskType.daily: '📅 Daily',
+                        TaskType.todo: '📝 To-Do'
+                      };
+                      final sel = type == t;
+                      return Expanded(
+                        child: GestureDetector(
+                          onTap: () => setLocal(() => type = t),
+                          child: Container(
+                            margin: const EdgeInsets.only(right: 8),
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            decoration: BoxDecoration(
+                              color: sel
+                                  ? AppColors.accent.withOpacity(0.15)
+                                  : AppColors.c1,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: sel ? AppColors.accent : AppColors.border,
+                                width: sel ? 1 : 0.5,
+                              ),
+                            ),
+                            child: Text(labels[t]!,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    color: sel ? AppColors.accent2 : AppColors.t3)),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Attribute selector
+                  const Text('Atribut Skill RPG',
+                      style: TextStyle(fontSize: 12, color: AppColors.t3)),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: SkillAttribute.values.map((attr) {
+                      final sel = attribute == attr;
+                      return GestureDetector(
+                        onTap: () => setLocal(() => attribute = attr),
                         child: Container(
-                          margin: const EdgeInsets.only(right: 8),
-                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(
                             color: sel
                                 ? AppColors.accent.withOpacity(0.15)
@@ -149,83 +210,82 @@ class TasksScreen extends StatelessWidget {
                               width: sel ? 1 : 0.5,
                             ),
                           ),
-                          child: Text(labels[t]!,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                  color: sel ? AppColors.accent2 : AppColors.t3)),
+                          child: Text(
+                            '${attr.emoji} ${attr.name}',
+                            style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                                color: sel ? AppColors.accent2 : AppColors.t3),
+                          ),
                         ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 16),
-
-                // Priority selector
-                const Text('Prioritas',
-                    style: TextStyle(fontSize: 12, color: AppColors.t3)),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    _priorityChip('🔴 High', TaskPriority.high, priority,
-                        (p) => setLocal(() => priority = p)),
-                    const SizedBox(width: 8),
-                    _priorityChip('🟡 Medium', TaskPriority.medium, priority,
-                        (p) => setLocal(() => priority = p)),
-                    const SizedBox(width: 8),
-                    _priorityChip('🟢 Low', TaskPriority.low, priority,
-                        (p) => setLocal(() => priority = p)),
-                  ],
-                ),
-                const SizedBox(height: 20),
-
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      if (titleCtrl.text.trim().isEmpty) return;
-                      final task = TaskModel(
-                        id: DateTime.now().millisecondsSinceEpoch.toString(),
-                        title: titleCtrl.text.trim(),
-                        subtitle: subCtrl.text.trim().isEmpty
-                            ? '📝 Task baru'
-                            : subCtrl.text.trim(),
-                        priority: priority,
-                        type: type,
-                        xpReward: 30,
-                        goldReward: 10,
                       );
-                      if (type == TaskType.daily) {
-                        state.dailyTasks.add(task);
-                      } else if (type == TaskType.habit) {
-                        state.habits.add(HabitModel(
-                          id: task.id,
-                          title: task.title,
-                          emoji: '⭐',
-                          xpReward: 15,
-                        ));
-                      } else {
-                        state.todos.add(task);
-                      }
-                      // ignore: invalid_use_of_protected_member
-                      state.notifyListeners();
-                      Navigator.pop(ctx);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.accent,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
-                      elevation: 0,
-                    ),
-                    child: const Text('Tambahkan',
-                        style: TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.w600)),
+                    }).toList(),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 16),
+
+                  // Priority selector
+                  const Text('Prioritas',
+                      style: TextStyle(fontSize: 12, color: AppColors.t3)),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      _priorityChip('High', TaskPriority.high, priority,
+                          (p) => setLocal(() => priority = p)),
+                      const SizedBox(width: 8),
+                      _priorityChip('Medium', TaskPriority.medium, priority,
+                          (p) => setLocal(() => priority = p)),
+                      const SizedBox(width: 8),
+                      _priorityChip('Low', TaskPriority.low, priority,
+                          (p) => setLocal(() => priority = p)),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        if (titleCtrl.text.trim().isEmpty) return;
+                        final task = TaskModel(
+                          id: DateTime.now().millisecondsSinceEpoch.toString(),
+                          title: titleCtrl.text.trim(),
+                          subtitle: subCtrl.text.trim().isEmpty
+                              ? '📝 Task baru'
+                              : subCtrl.text.trim(),
+                          priority: priority,
+                          type: type,
+                          attribute: attribute,
+                          xpReward: 30,
+                          goldReward: 10,
+                        );
+                        if (type == TaskType.habit) {
+                          state.addHabit(HabitModel(
+                            id: task.id,
+                            title: task.title,
+                            emoji: '⭐',
+                            xpReward: 15,
+                            attribute: attribute,
+                          ));
+                        } else {
+                          state.addTask(task);
+                        }
+                        Navigator.pop(ctx);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.accent,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14)),
+                        elevation: 0,
+                      ),
+                      child: const Text('Tambahkan',
+                          style: TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         });

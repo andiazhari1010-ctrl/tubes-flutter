@@ -4,6 +4,8 @@ import '../theme/app_theme.dart';
 import '../models/app_state.dart';
 import '../models/models.dart';
 import '../widgets/common_widgets.dart';
+import 'settings_screen.dart';
+import 'stats_screen.dart';
 
 class HeroScreen extends StatelessWidget {
   const HeroScreen({super.key});
@@ -26,17 +28,24 @@ class HeroScreen extends StatelessWidget {
           appBar: AppBar(
             title: const Text('Hero'),
             actions: [
-              Container(
-                margin: const EdgeInsets.only(right: 16),
-                width: 34, height: 34,
-                decoration: BoxDecoration(
-                  color: AppColors.c2,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border, width: 0.5),
-                ),
-                child: const Center(
-                  child: Icon(Icons.settings_outlined,
-                      color: AppColors.t2, size: 18),
+              GestureDetector(
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                  );
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(right: 16),
+                  width: 34, height: 34,
+                  decoration: BoxDecoration(
+                    color: AppColors.c2,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.border, width: 0.5),
+                  ),
+                  child: const Center(
+                    child: Icon(Icons.settings_outlined,
+                        color: AppColors.t2, size: 18),
+                  ),
                 ),
               ),
             ],
@@ -84,6 +93,68 @@ class HeroScreen extends StatelessWidget {
                       ],
                     ),
                   ],
+                ),
+              ),
+
+              const SizedBox(height: 12),
+              // ── Statistics Dashboard Button ────────────────────────────
+              GestureDetector(
+                onTap: () {
+                  Navigator.of(ctx).push(
+                    MaterialPageRoute(builder: (_) => const StatsScreen()),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.accent.withOpacity(0.15),
+                        AppColors.accent2.withOpacity(0.05),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: AppColors.accent.withOpacity(0.4),
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.accent.withOpacity(0.1),
+                        blurRadius: 10,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.bar_chart_rounded, color: AppColors.accent, size: 20),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: const [
+                            Text(
+                              'STATISTICS DASHBOARD',
+                              style: TextStyle(
+                                fontFamily: 'Cinzel',
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.t1,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Lihat progress mingguan, heatmap, & level atribut',
+                              style: TextStyle(fontSize: 9, color: AppColors.t3),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.arrow_forward_ios_rounded, color: AppColors.t3, size: 12),
+                    ],
+                  ),
                 ),
               ),
 

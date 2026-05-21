@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
-import 'role_selection_screen.dart'; // ← ganti dari main_shell.dart
-
+import 'role_selection_screen.dart';
+import '../services/auth_service.dart';
+import '../services/firestore_service.dart';
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -14,13 +15,47 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passCtrl = TextEditingController();
   bool _obscure = true;
   bool _isLogin = true;
+  bool _isLoading = false;
+  final _authService = AuthService();
+  final _firestoreService = FirestoreService();
 
-  // ── Setelah submit, arahkan ke pilih role ──────────────────────────────
-  void _submit() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const RoleSelectionScreen()),
-    );
+  void _submit() async {
+    final email = _emailCtrl.text.trim();
+    final pass = _passCtrl.text.trim();
+
+    if (email.isEmpty || pass.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Email dan Password harus diisi')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      if (_isLogin) {
+        await _authService.signInWithEmail(email, pass);
+        // Jika berhasil, AuthWrapper otomatis akan pindah ke RoleSelectionScreen
+      } else {
+        final cred = await _authService.registerWithEmail(email, pass);
+        if (cred?.user != null) {
+          await _firestoreService.createUserDoc(cred!.user!.uid, email, 'user');
+        }
+        // Sama, otomatis pindah
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -96,7 +131,7 @@ class _LoginScreenState extends State<LoginScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _submit,
+                  onPressed: _isLoading ? null : _submit,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.accent,
                     foregroundColor: Colors.white,
@@ -105,11 +140,17 @@ class _LoginScreenState extends State<LoginScreen> {
                         borderRadius: BorderRadius.circular(14)),
                     elevation: 0,
                   ),
-                  child: Text(
-                    _isLogin ? 'Masuk Sekarang' : 'Daftar Sekarang',
-                    style: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w600),
-                  ),
+                  child: _isLoading 
+                    ? const SizedBox(
+                        height: 20, 
+                        width: 20, 
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+                      )
+                    : Text(
+                        _isLogin ? 'Masuk Sekarang' : 'Daftar Sekarang',
+                        style: const TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w600),
+                      ),
                 ),
               ),
               const SizedBox(height: 16),
