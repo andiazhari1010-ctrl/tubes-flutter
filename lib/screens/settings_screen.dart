@@ -421,6 +421,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
 
+          const SizedBox(height: 20),
+
+          // ── Game Terminology / Glossary ────────────────────────────
+          _sectionHeader('GAME TERMINOLOGY'),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.c2,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.border, width: 0.5),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildGlossaryItem('XP (Experience)', 'Poin pengalaman. Kumpulkan hingga 100 XP untuk naik Level. Saat naik level, XP akan reset ke 0 dan Max HP & MP akan pulih sepenuhnya.'),
+                const SizedBox(height: 12),
+                _buildGlossaryItem('HP (Health Points)', 'Nyawa karakter (Maks 150). Berkurang jika kamu gagal melakukan Habit yang baik atau diserang Boss.'),
+                const SizedBox(height: 12),
+                _buildGlossaryItem('MP (Mana Points)', 'Energi magis (Maks 100). Saat ini dapat direstore dengan item tertentu seperti Coffee Cup.'),
+                const SizedBox(height: 12),
+                _buildGlossaryItem('MM (Momentum)', 'Semangat/fokus kamu (0-100). Momentum tinggi memberikan bonus XP dan Gold saat kamu menyelesaikan Task.'),
+              ],
+            ),
+          ),
+
           const SizedBox(height: 32),
 
           // ── Logout Action ──────────────────────────────────────────
@@ -490,6 +515,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildGlossaryItem(String title, String description) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.accent)),
+        const SizedBox(height: 4),
+        Text(description, style: TextStyle(fontSize: 11, color: AppColors.t2, height: 1.4)),
+      ],
     );
   }
 }

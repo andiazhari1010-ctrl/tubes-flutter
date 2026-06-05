@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
 import '../../services/firestore_service.dart';
+import '../../models/app_state.dart';
 import '../auth_wrapper.dart';
 
 // Custom widget for section titles
@@ -288,18 +290,36 @@ class AdminDashboardScreen extends StatelessWidget {
                       const SectionTitle('Aktivitas Terbaru'),
                       ...recent.map((a) => _ActivityTile(data: a)),
                       const SectionTitle('Status Boss Aktif'),
-                      _BossStatusCard(
-                          name: 'Deadline Boss Lv.3',
-                          hp: 1400,
-                          maxHp: 2000,
-                          parties: 3,
-                          color: AppColors.red),
-                      _BossStatusCard(
-                          name: 'UTS Boss Lv.2',
-                          hp: 800,
-                          maxHp: 1500,
-                          parties: 2,
-                          color: AppColors.gold),
+                      Builder(
+                        builder: (context) {
+                          final state = Provider.of<AppState>(context);
+                          final activeBosses = state.globalBosses.where((b) => b.progress > 0).toList();
+                          if (activeBosses.isEmpty) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Text(
+                                'Tidak ada Boss aktif',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.t3,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            );
+                          }
+                          return Column(
+                            children: activeBosses.map((boss) {
+                              return _BossStatusCard(
+                                name: boss.title,
+                                hp: (boss.progress / 100 * 2000).round(),
+                                maxHp: 2000,
+                                parties: 3,
+                                color: AppColors.red,
+                              );
+                            }).toList(),
+                          );
+                        },
+                      ),
                       const SizedBox(height: 16),
                     ],
                   ),

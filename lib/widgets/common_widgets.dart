@@ -424,56 +424,115 @@ class QuestCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 16),
-              Text(
-                quest.isBoss
-                    ? 'Serang boss ini bersama party Anda! Setiap serangan manual mengurangi HP boss.'
-                    : 'Kerjakan tugas harian atau klik tombol di bawah untuk melaporkan progress quest ini.',
-                style: TextStyle(fontSize: 12, color: AppColors.t2),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    quest.isBoss ? 'HP Boss: ${quest.progress}%' : 'Progress: ${quest.progress}%',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: quest.isBoss ? AppColors.red : AppColors.accent,
-                    ),
+              if (quest.isBoss) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.red.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.red.withValues(alpha: 0.2), width: 0.5),
                   ),
-                  Text(
-                    'Hadiah: +${quest.xpReward} XP',
-                    style: TextStyle(fontSize: 13, color: AppColors.xp, fontWeight: FontWeight.w600),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: (isDone || quest.isBoss) ? null : () {
-                    Navigator.pop(ctx);
-                    state.progressQuest(quest.id);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isDone ? AppColors.border : (quest.isBoss ? AppColors.border : AppColors.accent),
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: AppColors.border,
-                    disabledForegroundColor: AppColors.t3,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: Text(
-                    isDone 
-                      ? (quest.isBoss ? '💀 BOSS TELAH DIKALAHKAN' : '🏆 QUEST SELESAI')
-                      : (quest.isBoss ? '🛡️ SERANG BOSS DI HALAMAN PARTY' : '⚔️ KERJAKAN QUEST (+20%)'),
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  child: Row(
+                    children: [
+                      const Text('🛡️', style: TextStyle(fontSize: 18)),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'To complete this quest, you can only do it through the Party page.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.red,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'HP Boss: ${quest.progress}%',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.red,
+                      ),
+                    ),
+                    Text(
+                      'Hadiah: +${quest.xpReward} XP',
+                      style: TextStyle(fontSize: 13, color: AppColors.xp, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: AppColors.border, width: 0.5),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'CLOSE',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.t2),
+                    ),
+                  ),
+                ),
+              ] else ...[
+                Text(
+                  'Kerjakan tugas harian atau klik tombol di bawah untuk melaporkan progress quest ini.',
+                  style: TextStyle(fontSize: 12, color: AppColors.t2),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Progress: ${quest.progress}%',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.accent,
+                      ),
+                    ),
+                    Text(
+                      'Hadiah: +${quest.xpReward} XP',
+                      style: TextStyle(fontSize: 13, color: AppColors.xp, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: isDone ? null : () {
+                      Navigator.pop(ctx);
+                      state.progressQuest(quest.id);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isDone ? AppColors.border : AppColors.accent,
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: AppColors.border,
+                      disabledForegroundColor: AppColors.t3,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      isDone ? '🏆 QUEST SELESAI' : '⚔️ KERJAKAN QUEST (+20%)',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         );

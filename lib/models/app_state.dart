@@ -29,12 +29,12 @@ class AppState extends ChangeNotifier {
     name: 'Novice Hero',
     heroClass: HeroClass.warrior,
     level: 1,
-    hp: 100,
-    maxHp: 100,
+    hp: 150,
+    maxHp: 150,
     xp: 0,
     maxXp: 100,
-    mp: 50,
-    maxMp: 50,
+    mp: 100,
+    maxMp: 100,
     gold: 0,
     gems: 0,
     streak: 0,
@@ -212,12 +212,12 @@ class AppState extends ChangeNotifier {
           name: 'Novice Hero',
           heroClass: HeroClass.warrior,
           level: 1,
-          hp: 100,
-          maxHp: 100,
+          hp: 150,
+          maxHp: 150,
           xp: 0,
           maxXp: 100,
-          mp: 50,
-          maxMp: 50,
+          mp: 100,
+          maxMp: 100,
           gold: 0,
           gems: 0,
           streak: 0,
@@ -381,6 +381,7 @@ class AppState extends ChangeNotifier {
 
           if (data['hero'] != null) {
             hero = HeroModel.fromMap(Map<String, dynamic>.from(data['hero']));
+            _checkLevelUp();
           }
           if (data['habits'] != null) {
             habits = (data['habits'] as List)
@@ -400,12 +401,12 @@ class AppState extends ChangeNotifier {
           if (data['quests'] != null) {
             quests = (data['quests'] as List)
                 .map((q) => QuestModel.fromMap(Map<String, dynamic>.from(q)))
+                .where((q) => !q.isBoss)
                 .toList();
           } else {
             // Default Quest if empty
             quests = [
               QuestModel(id: 'q1', title: 'Selesaikan 5 Tugas Hari Ini', progress: 0, xpReward: 150, timeLeft: '12 Jam Tersisa', isBoss: false),
-              QuestModel(id: 'q2', title: 'Kalahkan Midterm Exam Boss', progress: 0, xpReward: 300, timeLeft: '3 Hari Tersisa', isBoss: true),
             ];
           }
           hasClaimedDaily = data['hasClaimedDaily'] ?? false;
@@ -421,7 +422,6 @@ class AppState extends ChangeNotifier {
         // Document doesn't exist yet, populate with default quests
         quests = [
           QuestModel(id: 'q1', title: 'Selesaikan 5 Tugas Hari Ini', progress: 0, xpReward: 150, timeLeft: '12 Jam Tersisa', isBoss: false),
-          QuestModel(id: 'q2', title: 'Kalahkan Midterm Exam Boss', progress: 0, xpReward: 300, timeLeft: '3 Hari Tersisa', isBoss: true),
         ];
         saveToFirestore();
       }
@@ -505,7 +505,7 @@ class AppState extends ChangeNotifier {
         .snapshots()
         .listen((snapshot) {
       if (snapshot.docs.isNotEmpty) {
-        globalQuests = snapshot.docs.map((doc) => QuestModel.fromMap(doc.data() as Map<String, dynamic>)).toList();
+        globalQuests = snapshot.docs.map((doc) => QuestModel.fromMap(doc.data() as Map<String, dynamic>, doc.id)).toList();
       } else {
         _populateDefaultGlobalQuests();
       }
@@ -521,7 +521,7 @@ class AppState extends ChangeNotifier {
         .snapshots()
         .listen((snapshot) {
       if (snapshot.docs.isNotEmpty) {
-        final newBosses = snapshot.docs.map((doc) => QuestModel.fromMap(doc.data() as Map<String, dynamic>)).toList();
+        final newBosses = snapshot.docs.map((doc) => QuestModel.fromMap(doc.data() as Map<String, dynamic>, doc.id)).toList();
         
         for (var newB in newBosses) {
           final oldB = globalBosses.firstWhere((b) => b.id == newB.id, orElse: () => newB);
@@ -704,15 +704,20 @@ class AppState extends ChangeNotifier {
   }
 
   void _checkLevelUp() {
-    if (hero.xp >= hero.maxXp) {
-      hero.xp -= hero.maxXp;
+    bool leveledUp = false;
+    while (hero.xp >= 100) {
+      hero.xp -= 100;
       hero.level += 1;
-      hero.maxXp = (hero.level * 100);
-      hero.maxHp = 100 + (hero.level * 10);
-      hero.hp = hero.maxHp;
-      hero.maxMp = 50 + (hero.level * 5);
-      hero.mp = hero.maxMp;
+      leveledUp = true;
+    }
+    if (leveledUp) {
+      hero.maxXp = 100;
+      hero.maxHp = 150;
+      hero.hp = 150;
+      hero.maxMp = 100;
+      hero.mp = 100;
       addNotification("🎉 LEVEL UP! Reached Level ${hero.level}");
+      saveToFirestore();
     }
   }
 

@@ -44,9 +44,6 @@ class PartyScreen extends StatelessWidget {
                 // ── Party Card ─────────────────────────────────────────────
                 Builder(builder: (context) {
                   final activeBosses = state.globalBosses.where((b) => b.progress > 0).toList();
-                  final activeBoss = activeBosses.isNotEmpty ? activeBosses.first : null;
-                  final hpValue = activeBoss != null ? (activeBoss.progress / 100) : 0.0;
-                  final hpText = activeBoss != null ? "${(activeBoss.progress / 100 * 2000).round()} / 2000 HP" : "0 / 2000 HP";
 
                   return Container(
                     padding: const EdgeInsets.all(16),
@@ -88,60 +85,99 @@ class PartyScreen extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 4),
-                        Text('${state.partyMembers.length} anggota · Quest aktif: ${activeBoss?.title ?? "Tidak ada"}',
-                            style: TextStyle(fontSize: 11, color: AppColors.t3)),
+                        Text(
+                          '${state.partyMembers.length} anggota · Quest aktif: ${activeBosses.isEmpty ? "Tidak ada" : activeBosses.map((b) => b.title).join(", ")}',
+                          style: TextStyle(fontSize: 11, color: AppColors.t3),
+                        ),
                         const SizedBox(height: 14),
 
-                        // Boss bar
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text('💀 ${activeBoss?.title ?? "Tidak ada Boss"}',
-                                style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.red)),
-                            Text(hpText,
-                                style:
-                                    TextStyle(fontSize: 10, color: AppColors.t3)),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(99),
-                          child: LinearProgressIndicator(
-                            value: hpValue,
-                            minHeight: 8,
-                            backgroundColor: AppColors.red.withValues(alpha: 0.12),
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(AppColors.red),
+                        // Boss bar list
+                        if (activeBosses.isEmpty) ...[
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('💀 Tidak ada Boss',
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.red)),
+                              Text('0 / 2000 HP',
+                                  style: TextStyle(fontSize: 10, color: AppColors.t3)),
+                            ],
                           ),
-                        ),
-                        if (activeBoss != null) ...[
-                          const SizedBox(height: 12),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton.icon(
-                              onPressed: () {
-                                state.attackGlobalBoss(activeBoss.id);
-                              },
-                              icon: const Text('💥', style: TextStyle(fontSize: 14)),
-                              label: const Text(
-                                'SERANG BOSS (-10% HP)',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.red,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
+                          const SizedBox(height: 6),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(99),
+                            child: LinearProgressIndicator(
+                              value: 0,
+                              minHeight: 8,
+                              backgroundColor: AppColors.red.withValues(alpha: 0.12),
+                              valueColor: AlwaysStoppedAnimation<Color>(AppColors.red),
                             ),
                           ),
+                        ] else ...[
+                          ...activeBosses.map((boss) {
+                            final hpVal = boss.progress / 100.0;
+                            final hpTxt = "${(boss.progress / 100.0 * 2000).round()} / 2000 HP";
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 14),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Text('💀 ${boss.title}',
+                                            style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                                color: AppColors.red),
+                                            overflow: TextOverflow.ellipsis),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(hpTxt,
+                                          style: TextStyle(fontSize: 10, color: AppColors.t3)),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(99),
+                                    child: LinearProgressIndicator(
+                                      value: hpVal,
+                                      minHeight: 8,
+                                      backgroundColor: AppColors.red.withValues(alpha: 0.12),
+                                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.red),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton.icon(
+                                      onPressed: () {
+                                        state.attackGlobalBoss(boss.id);
+                                      },
+                                      icon: const Text('💥', style: TextStyle(fontSize: 14)),
+                                      label: const Text(
+                                        'SERANG BOSS (-10% HP)',
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12),
+                                      ),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppColors.red,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(vertical: 12),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
                         ],
 
                         // Members

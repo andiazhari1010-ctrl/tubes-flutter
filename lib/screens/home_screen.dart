@@ -147,25 +147,39 @@ class HomeScreen extends StatelessWidget {
                                   ],
                                 ),
                                 const SizedBox(width: 14),
-                                Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  children: [
-                                    Text(hero.name,
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(hero.name,
+                                          style: TextStyle(
+                                            fontFamily: 'Cinzel',
+                                            fontSize: 14,
+                                            color: AppColors.t1,
+                                          )),
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        '${hero.classEmoji} ${hero.className} · ${state.partyName ?? "No Party"}',
                                         style: TextStyle(
-                                          fontFamily: 'Cinzel',
-                                          fontSize: 14,
-                                          color: AppColors.t1,
-                                        )),
-                                    const SizedBox(height: 3),
-                                    Text(
-                                      '${hero.classEmoji} ${hero.className} · Kelompok 6',
-                                      style: TextStyle(
-                                          fontSize: 11,
-                                          color: AppColors.accent2,
-                                          fontWeight: FontWeight.w500),
+                                            fontSize: 11,
+                                            color: AppColors.accent2,
+                                            fontWeight: FontWeight.w500),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                GestureDetector(
+                                  onTap: () => _showStatsExplanation(context),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.05),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: Colors.white.withValues(alpha: 0.08), width: 0.5),
                                     ),
-                                  ],
+                                    child: const Text('ℹ️', style: TextStyle(fontSize: 12)),
+                                  ),
                                 ),
                               ],
                             ),
@@ -549,6 +563,68 @@ class HomeScreen extends StatelessWidget {
           },
         );
       },
+    );
+  }
+
+  void _showStatsExplanation(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.c2,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.t3,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'STATUS HERO & STATS',
+                style: TextStyle(
+                  fontFamily: 'Cinzel',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.gold,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _statExplainRow('❤️ HP (Health Points)', 'Kesehatan Hero Anda. HP berkurang jika Anda mengabaikan quest/boss, dan dapat dipulihkan dengan ramuan (potion) dari toko.'),
+              const SizedBox(height: 12),
+              _statExplainRow('✨ XP (Experience Points)', 'Poin Pengalaman. Kumpulkan 100 XP untuk naik level. XP akan tereset ke 0 setelah level naik.'),
+              const SizedBox(height: 12),
+              _statExplainRow('🧪 MP (Mana Points)', 'Mana / Energi Hero. Digunakan untuk beraktivitas atau menggunakan skill khusus tertentu.'),
+              const SizedBox(height: 12),
+              _statExplainRow('⚡ MM (Momentum)', 'Productivity Momentum. Pengali XP/Gold (hingga x1.5) berdasarkan keaktifan Anda menyelesaikan tugas hari ini.'),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _statExplainRow(String title, String description) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: TextStyle(color: AppColors.t1, fontSize: 12, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 3),
+        Text(description, style: TextStyle(color: AppColors.t3, fontSize: 10, height: 1.4)),
+      ],
     );
   }
 }

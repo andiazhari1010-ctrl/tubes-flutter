@@ -54,12 +54,12 @@ class HeroModel {
     required this.name,
     required this.heroClass,
     this.level = 1,
-    this.hp = 100,
-    this.maxHp = 100,
+    this.hp = 150,
+    this.maxHp = 150,
     this.xp = 0,
     this.maxXp = 100,
-    this.mp = 50,
-    this.maxMp = 50,
+    this.mp = 100,
+    this.maxMp = 100,
     this.gold = 0,
     this.gems = 0,
     this.streak = 0,
@@ -122,8 +122,10 @@ class HeroModel {
       parsedClass = HeroClass.values.firstWhere((e) => e.name == map['heroClass']);
     } catch (_) {}
 
-    final maxHpVal = ((map['maxHp'] ?? 100) as num).toInt();
-    final hpVal = ((map['hp'] ?? 100) as num).toInt().clamp(0, maxHpVal);
+    final maxHpVal = 150;
+    final hpVal = ((map['hp'] ?? 150) as num).toInt().clamp(0, maxHpVal);
+    final maxMpVal = 100;
+    final mpVal = ((map['mp'] ?? 100) as num).toInt().clamp(0, maxMpVal);
 
     return HeroModel(
       name: map['name'] ?? 'Novice Hero',
@@ -132,9 +134,9 @@ class HeroModel {
       hp: hpVal,
       maxHp: maxHpVal,
       xp: map['xp'] ?? 0,
-      maxXp: map['maxXp'] ?? 100,
-      mp: map['mp'] ?? 50,
-      maxMp: map['maxMp'] ?? 50,
+      maxXp: 100,
+      mp: mpVal,
+      maxMp: maxMpVal,
       gold: map['gold'] ?? 0,
       gems: map['gems'] ?? 0,
       streak: map['streak'] ?? 0,
@@ -292,12 +294,12 @@ class QuestModel {
     };
   }
 
-  factory QuestModel.fromMap(Map<String, dynamic> map) {
+  factory QuestModel.fromMap(Map<String, dynamic> map, [String? docId]) {
     return QuestModel(
-      id: map['id'] ?? '',
+      id: docId ?? map['id'] ?? '',
       title: map['title'] ?? '',
-      progress: map['progress'] ?? 0,
-      xpReward: map['xpReward'] ?? 100,
+      progress: ((map['progress'] ?? 0) as num).toInt(),
+      xpReward: ((map['xpReward'] ?? 100) as num).toInt(),
       timeLeft: map['timeLeft'] ?? '',
       isBoss: map['isBoss'] ?? false,
     );
