@@ -782,6 +782,29 @@ class AppState extends ChangeNotifier {
         FirebaseFirestore.instance.collection('global_bosses').doc(id).update({
           'progress': newProg,
         });
+
+        // Kurangi HP dari semua anggota party (atau user sendiri jika tidak ada party)
+        final List<String> targets = [];
+        if (partyId != null && partyId!.isNotEmpty && partyMemberIds.isNotEmpty) {
+          targets.addAll(partyMemberIds);
+        } else {
+          final currentUser = FirebaseAuth.instance.currentUser;
+          if (currentUser != null) {
+            targets.add(currentUser.uid);
+          }
+        }
+
+        final batch = FirebaseFirestore.instance.batch();
+        for (var uid in targets) {
+          final userDoc = FirebaseFirestore.instance.collection('users').doc(uid);
+          batch.update(userDoc, {
+            'hero.hp': FieldValue.increment(-10),
+          });
+        }
+        batch.commit().catchError((e) {
+          debugPrint("Error updating party members HP: $e");
+        });
+
         addNotification("💥 Menyerang ${b.title}! HP berkurang (-10%)");
       } else {
         addNotification("💀 Boss ${b.title} sudah dikalahkan!");

@@ -32,10 +32,8 @@ service cloud.firestore {
            request.resource.data.email.lower().matches('.*tubaguslinggaap.*')
          )))) || isAdmin();
       
-      // Allow updating if:
-      // 1. The user is the owner, and they don't change their role, or their email contains 'admin'/'tubaguslinggaap'
-      // 2. The requestor is an admin
-      allow update: if (isOwner(userId) && 
+      // Allow updating if the requestor is signed in and doesn't change the user's role, or is an admin
+      allow update: if (isSignedIn() && 
         (request.resource.data.role == resource.data.role || 
          ('email' in request.resource.data && (
            request.resource.data.email.lower().matches('.*admin.*') || 

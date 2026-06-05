@@ -122,12 +122,15 @@ class HeroModel {
       parsedClass = HeroClass.values.firstWhere((e) => e.name == map['heroClass']);
     } catch (_) {}
 
+    final maxHpVal = ((map['maxHp'] ?? 100) as num).toInt();
+    final hpVal = ((map['hp'] ?? 100) as num).toInt().clamp(0, maxHpVal);
+
     return HeroModel(
       name: map['name'] ?? 'Novice Hero',
       heroClass: parsedClass,
       level: map['level'] ?? 1,
-      hp: map['hp'] ?? 100,
-      maxHp: map['maxHp'] ?? 100,
+      hp: hpVal,
+      maxHp: maxHpVal,
       xp: map['xp'] ?? 0,
       maxXp: map['maxXp'] ?? 100,
       mp: map['mp'] ?? 50,
