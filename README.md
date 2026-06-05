@@ -4,7 +4,6 @@
   <img src="https://img.shields.io/badge/Flutter-3.x-02569B?style=for-the-badge&logo=flutter&logoColor=white"/>
   <img src="https://img.shields.io/badge/Dart-3.x-0175C2?style=for-the-badge&logo=dart&logoColor=white"/>
   <img src="https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black"/>
-  <img src="https://img.shields.io/badge/Platform-Android%20|%20iOS%20|%20Web-4CAF50?style=for-the-badge"/>
 </p>
 
 > **HeroQuest** adalah aplikasi manajemen tugas berbasis gamifikasi (RPG) yang dibangun dengan Flutter dan Firebase. Ubah produktivitas harian Anda menjadi petualangan epik — selesaikan tugas, naik level, dan kalahkan boss bersama teman!
