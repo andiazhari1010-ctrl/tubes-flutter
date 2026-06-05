@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../theme/app_theme.dart';
-import '../../widgets/common_widgets.dart';
+import '../../models/app_state.dart';
+import '../../models/models.dart';
 
 class AdminContentScreen extends StatefulWidget {
   const AdminContentScreen({super.key});
@@ -27,11 +29,12 @@ class _AdminContentScreenState extends State<AdminContentScreen>
 
   @override
   Widget build(BuildContext context) {
+    final state = Provider.of<AppState>(context);
     return Scaffold(
       backgroundColor: AppColors.c0,
       appBar: AppBar(
         title: const Text('Manajemen Konten'),
-        titleTextStyle: const TextStyle(
+        titleTextStyle: TextStyle(
           fontFamily: 'Cinzel',
           fontSize: 17,
           fontWeight: FontWeight.w700,
@@ -39,16 +42,16 @@ class _AdminContentScreenState extends State<AdminContentScreen>
         ),
         actions: [
           GestureDetector(
-            onTap: () => _showAddDialog(context),
+            onTap: () => _showAddDialog(context, state: state, tabIdx: _tab.index),
             child: Container(
               margin: const EdgeInsets.only(right: 16),
               width: 34,
               height: 34,
               decoration: BoxDecoration(
-                color: AppColors.gold.withOpacity(0.12),
+                color: AppColors.gold.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                    color: AppColors.gold.withOpacity(0.3), width: 0.5),
+                    color: AppColors.gold.withValues(alpha: 0.3), width: 0.5),
               ),
               child: const Center(
                 child: Text('➕', style: TextStyle(fontSize: 16)),
@@ -74,17 +77,26 @@ class _AdminContentScreenState extends State<AdminContentScreen>
       body: TabBarView(
         controller: _tab,
         children: [
-          _QuestTab(onAdd: () => _showAddDialog(context)),
-          _BossTab(onAdd: () => _showAddDialog(context)),
-          _ItemTab(onAdd: () => _showAddDialog(context)),
+          _QuestTab(
+            onAdd: () => _showAddDialog(context, state: state, tabIdx: 0),
+            onEdit: (item) => _showAddDialog(context, state: state, tabIdx: 0, itemToEdit: item),
+          ),
+          _BossTab(
+            onAdd: () => _showAddDialog(context, state: state, tabIdx: 1),
+            onEdit: (item) => _showAddDialog(context, state: state, tabIdx: 1, itemToEdit: item),
+          ),
+          _ItemTab(
+            onAdd: () => _showAddDialog(context, state: state, tabIdx: 2),
+            onEdit: (item) => _showAddDialog(context, state: state, tabIdx: 2, itemToEdit: item),
+          ),
         ],
       ),
     );
   }
 
-  void _showAddDialog(BuildContext context) {
-    final titleCtrl = TextEditingController();
-    final xpCtrl = TextEditingController();
+  void _showAddDialog(BuildContext context, {required AppState state, required int tabIdx, _ContentItem? itemToEdit}) {
+    final titleCtrl = TextEditingController(text: itemToEdit?.title ?? '');
+    final xpCtrl = TextEditingController(text: itemToEdit != null ? '${itemToEdit.rewardOrPrice}' : '');
 
     showModalBottomSheet(
       context: context,
@@ -115,7 +127,7 @@ class _AdminContentScreenState extends State<AdminContentScreen>
               ),
             ),
             const SizedBox(height: 16),
-            const Text('Tambah Konten Baru',
+            Text(itemToEdit != null ? 'Edit Konten' : 'Tambah Konten Baru',
                 style: TextStyle(
                   fontFamily: 'Cinzel',
                   fontSize: 16,
@@ -124,13 +136,70 @@ class _AdminContentScreenState extends State<AdminContentScreen>
             const SizedBox(height: 16),
             _buildInput(titleCtrl, 'Nama / Judul konten', Icons.title),
             const SizedBox(height: 10),
-            _buildInput(xpCtrl, 'XP Reward', Icons.star_outline,
+            _buildInput(xpCtrl, tabIdx == 2 ? 'Harga (Gold)' : 'XP Reward', Icons.star_outline,
                 keyboardType: TextInputType.number),
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () => Navigator.pop(ctx),
+                onPressed: () {
+                  final title = titleCtrl.text.trim();
+                  final valStr = xpCtrl.text.trim();
+                  if (title.isNotEmpty) {
+                    final val = int.tryParse(valStr) ?? 100;
+                    if (itemToEdit != null) {
+                      // Edit Mode
+                      if (tabIdx == 0) {
+                        state.updateGlobalQuest(itemToEdit.id, title, val);
+                      } else if (tabIdx == 1) {
+                        state.updateGlobalBoss(itemToEdit.id, title, val);
+                      } else if (tabIdx == 2) {
+                        state.updateShopItem(itemToEdit.id, title, val);
+                      }
+                    } else {
+                      // Add Mode
+                      final newId = DateTime.now().millisecondsSinceEpoch.toString();
+                      if (tabIdx == 0) {
+                        state.addGlobalQuest(QuestModel(
+                          id: newId,
+                          title: title,
+                          progress: 100,
+                          xpReward: val,
+                          timeLeft: '7 Hari Tersisa',
+                          isBoss: false,
+                        ));
+                      } else if (tabIdx == 1) {
+                        state.addGlobalBoss(QuestModel(
+                          id: newId,
+                          title: title,
+                          progress: 100,
+                          xpReward: val,
+                          timeLeft: '1 Party',
+                          isBoss: true,
+                        ));
+                      } else if (tabIdx == 2) {
+                        state.addShopItem(ShopItem(
+                          id: newId,
+                          name: title,
+                          description: 'Item Baru',
+                          emoji: '🛡️',
+                          price: val,
+                          category: ItemCategory.armor,
+                          rarity: ItemRarity.rare,
+                        ));
+                      }
+                    }
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(itemToEdit != null
+                            ? 'Konten berhasil diperbarui!'
+                            : 'Konten berhasil ditambahkan!'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                  Navigator.pop(ctx);
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.gold,
                   foregroundColor: const Color(0xFF2A1A00),
@@ -139,9 +208,9 @@ class _AdminContentScreenState extends State<AdminContentScreen>
                       borderRadius: BorderRadius.circular(14)),
                   elevation: 0,
                 ),
-                child: const Text('Simpan Konten',
+                child: Text(itemToEdit != null ? 'Perbarui Konten' : 'Simpan Konten',
                     style:
-                        TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                        const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
               ),
             ),
           ],
@@ -155,10 +224,10 @@ class _AdminContentScreenState extends State<AdminContentScreen>
     return TextField(
       controller: ctrl,
       keyboardType: keyboardType,
-      style: const TextStyle(fontSize: 13, color: AppColors.t1),
+      style: TextStyle(fontSize: 13, color: AppColors.t1),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(color: AppColors.t3),
+        hintStyle: TextStyle(color: AppColors.t3),
         prefixIcon: Icon(icon, color: AppColors.t3, size: 18),
         filled: true,
         fillColor: AppColors.c1,
@@ -170,7 +239,7 @@ class _AdminContentScreenState extends State<AdminContentScreen>
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.gold, width: 1),
+          borderSide: BorderSide(color: AppColors.gold, width: 1),
         ),
       ),
     );
@@ -180,53 +249,45 @@ class _AdminContentScreenState extends State<AdminContentScreen>
 // ── Quest Tab ─────────────────────────────────────────────────────────────────
 class _QuestTab extends StatefulWidget {
   final VoidCallback onAdd;
-  const _QuestTab({required this.onAdd});
+  final Function(_ContentItem) onEdit;
+  const _QuestTab({required this.onAdd, required this.onEdit});
 
   @override
   State<_QuestTab> createState() => _QuestTabState();
 }
 
 class _QuestTabState extends State<_QuestTab> {
-  final List<_ContentItem> _quests = [
-    _ContentItem(
-        emoji: '📚',
-        title: 'UTS Pemrograman Mobile',
-        sub: 'Aktif · 3 hari tersisa · 200 XP',
-        isActive: true),
-    _ContentItem(
-        emoji: '🧪',
-        title: 'Laporan Praktikum Jaringan',
-        sub: 'Aktif · 5 hari tersisa · 150 XP',
-        isActive: true),
-    _ContentItem(
-        emoji: '📝',
-        title: 'Quiz Basis Data',
-        sub: 'Nonaktif · Draft',
-        isActive: false),
-    _ContentItem(
-        emoji: '🎯',
-        title: 'Project Akhir RPL',
-        sub: 'Aktif · 14 hari tersisa · 500 XP',
-        isActive: true),
-  ];
-
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        _SummaryRow(
-            active: _quests.where((q) => q.isActive).length,
-            total: _quests.length,
-            label: 'Quest'),
-        const SizedBox(height: 12),
-        ..._quests.map((q) => _ContentCard(
-              item: q,
-              accentColor: AppColors.accent,
-              onToggle: () => setState(() => q.isActive = !q.isActive),
-              onDelete: () => setState(() => _quests.remove(q)),
-            )),
-      ],
+    return Consumer<AppState>(
+      builder: (context, state, _) {
+        final list = state.globalQuests.map((q) => _ContentItem(
+          id: q.id,
+          emoji: q.isBoss ? '💀' : '📚',
+          title: q.title,
+          sub: q.progress == 0 ? 'Nonaktif · Draft' : 'Aktif · ${q.timeLeft} · ${q.xpReward} XP',
+          isActive: q.progress > 0,
+          rewardOrPrice: q.xpReward,
+        )).toList();
+
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            _SummaryRow(
+                active: list.where((q) => q.isActive).length,
+                total: list.length,
+                label: 'Quest'),
+            const SizedBox(height: 12),
+            ...list.map((q) => _ContentCard(
+                  item: q,
+                  accentColor: AppColors.accent,
+                  onToggle: () => state.toggleGlobalQuest(q.id),
+                  onEdit: () => widget.onEdit(q),
+                  onDelete: () => state.deleteGlobalQuest(q.id),
+                )),
+          ],
+        );
+      },
     );
   }
 }
@@ -234,50 +295,45 @@ class _QuestTabState extends State<_QuestTab> {
 // ── Boss Tab ──────────────────────────────────────────────────────────────────
 class _BossTab extends StatefulWidget {
   final VoidCallback onAdd;
-  const _BossTab({required this.onAdd});
+  final Function(_ContentItem) onEdit;
+  const _BossTab({required this.onAdd, required this.onEdit});
 
   @override
   State<_BossTab> createState() => _BossTabState();
 }
 
 class _BossTabState extends State<_BossTab> {
-  final List<_ContentItem> _bosses = [
-    _ContentItem(
-        emoji: '💀',
-        title: 'Deadline Boss Lv.3',
-        sub: 'Aktif · 2000 HP · 500 XP · 3 Party',
-        isActive: true,
-        hp: 70),
-    _ContentItem(
-        emoji: '👾',
-        title: 'UTS Boss Lv.2',
-        sub: 'Aktif · 1500 HP · 350 XP · 2 Party',
-        isActive: true,
-        hp: 53),
-    _ContentItem(
-        emoji: '🐉',
-        title: 'Final Project Boss Lv.5',
-        sub: 'Belum aktif · 5000 HP · 1000 XP',
-        isActive: false,
-        hp: 100),
-  ];
-
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        _SummaryRow(
-            active: _bosses.where((b) => b.isActive).length,
-            total: _bosses.length,
-            label: 'Boss'),
-        const SizedBox(height: 12),
-        ..._bosses.map((b) => _BossCard(
-              item: b,
-              onToggle: () => setState(() => b.isActive = !b.isActive),
-              onDelete: () => setState(() => _bosses.remove(b)),
-            )),
-      ],
+    return Consumer<AppState>(
+      builder: (context, state, _) {
+        final list = state.globalBosses.map((b) => _ContentItem(
+          id: b.id,
+          emoji: '👾',
+          title: b.title,
+          sub: b.progress == 0 ? 'Belum aktif · 5000 HP · ${b.xpReward} XP' : 'Aktif · ${b.progress}% HP · ${b.xpReward} XP · ${b.timeLeft}',
+          isActive: b.progress > 0,
+          hp: b.progress,
+          rewardOrPrice: b.xpReward,
+        )).toList();
+
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            _SummaryRow(
+                active: list.where((b) => b.isActive).length,
+                total: list.length,
+                label: 'Boss'),
+            const SizedBox(height: 12),
+            ...list.map((b) => _BossCard(
+                  item: b,
+                  onToggle: () => state.toggleGlobalBoss(b.id),
+                  onEdit: () => widget.onEdit(b),
+                  onDelete: () => state.deleteGlobalBoss(b.id),
+                )),
+          ],
+        );
+      },
     );
   }
 }
@@ -285,76 +341,67 @@ class _BossTabState extends State<_BossTab> {
 // ── Item Tab ──────────────────────────────────────────────────────────────────
 class _ItemTab extends StatefulWidget {
   final VoidCallback onAdd;
-  const _ItemTab({required this.onAdd});
+  final Function(_ContentItem) onEdit;
+  const _ItemTab({required this.onAdd, required this.onEdit});
 
   @override
   State<_ItemTab> createState() => _ItemTabState();
 }
 
 class _ItemTabState extends State<_ItemTab> {
-  final List<_ContentItem> _items = [
-    _ContentItem(
-        emoji: '🗡️',
-        title: 'Iron Sword',
-        sub: '+15 ATK · 80 Gold · Warrior',
-        isActive: true),
-    _ContentItem(
-        emoji: '🛡️',
-        title: 'Study Shield',
-        sub: '+20 DEF · 120 Gold · Semua Class',
-        isActive: true),
-    _ContentItem(
-        emoji: '🧪',
-        title: 'HP Potion',
-        sub: 'Restore 30 HP · 50 Gold',
-        isActive: true),
-    _ContentItem(
-        emoji: '📜',
-        title: 'XP Scroll',
-        sub: '+100 XP instan · 200 Gold',
-        isActive: true),
-    _ContentItem(
-        emoji: '🎩',
-        title: 'Wizard Hat',
-        sub: '+10 MP · 90 Gold · Mage',
-        isActive: false),
-  ];
-
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        _SummaryRow(
-            active: _items.where((i) => i.isActive).length,
-            total: _items.length,
-            label: 'Item'),
-        const SizedBox(height: 12),
-        ..._items.map((item) => _ContentCard(
-              item: item,
-              accentColor: AppColors.gold,
-              onToggle: () => setState(() => item.isActive = !item.isActive),
-              onDelete: () => setState(() => _items.remove(item)),
-            )),
-      ],
+    return Consumer<AppState>(
+      builder: (context, state, _) {
+        final list = state.shopItems.map((i) => _ContentItem(
+          id: i.id,
+          emoji: i.emoji,
+          title: i.name,
+          sub: '${i.description} · ${i.price} Gold',
+          isActive: !i.owned,
+          rewardOrPrice: i.price,
+        )).toList();
+
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            _SummaryRow(
+                active: list.where((i) => i.isActive).length,
+                total: list.length,
+                label: 'Item'),
+            const SizedBox(height: 12),
+            ...list.map((item) => _ContentCard(
+                  item: item,
+                  accentColor: AppColors.gold,
+                  onToggle: () => state.toggleShopItem(item.id),
+                  onEdit: () => widget.onEdit(item),
+                  onDelete: () => state.deleteShopItem(item.id),
+                )),
+          ],
+        );
+      },
     );
   }
 }
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 class _ContentItem {
+  String id;
   String emoji;
   String title;
   String sub;
   bool isActive;
   int hp;
+  int rewardOrPrice;
 
   _ContentItem({
+    required this.id,
     required this.emoji,
     required this.title,
     required this.sub,
     this.isActive = true,
     this.hp = 0,
+    this.rewardOrPrice = 100,
   });
 }
 
@@ -384,9 +431,9 @@ class _SummaryRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3), width: 0.5),
+        border: Border.all(color: color.withValues(alpha: 0.3), width: 0.5),
       ),
       child: Text(text,
           style: TextStyle(
@@ -400,12 +447,14 @@ class _ContentCard extends StatelessWidget {
   final _ContentItem item;
   final Color accentColor;
   final VoidCallback onToggle;
+  final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   const _ContentCard({
     required this.item,
     required this.accentColor,
     required this.onToggle,
+    required this.onEdit,
     required this.onDelete,
   });
 
@@ -419,7 +468,7 @@ class _ContentCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color:
-              item.isActive ? accentColor.withOpacity(0.2) : AppColors.border,
+              item.isActive ? accentColor.withValues(alpha: 0.2) : AppColors.border,
           width: 0.5,
         ),
       ),
@@ -429,7 +478,7 @@ class _ContentCard extends StatelessWidget {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: accentColor.withOpacity(0.08),
+              color: accentColor.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Center(
@@ -442,13 +491,13 @@ class _ContentCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(item.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                         color: AppColors.t1)),
                 const SizedBox(height: 2),
                 Text(item.sub,
-                    style: const TextStyle(fontSize: 10, color: AppColors.t3)),
+                    style: TextStyle(fontSize: 10, color: AppColors.t3)),
               ],
             ),
           ),
@@ -460,8 +509,8 @@ class _ContentCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: item.isActive
-                    ? AppColors.xp.withOpacity(0.12)
-                    : AppColors.t3.withOpacity(0.12),
+                    ? AppColors.xp.withValues(alpha: 0.12)
+                    : AppColors.t3.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -475,8 +524,14 @@ class _ContentCard extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           GestureDetector(
+            onTap: onEdit,
+            child: Icon(Icons.edit_outlined,
+                color: AppColors.gold, size: 18),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
             onTap: onDelete,
-            child: const Icon(Icons.delete_outline,
+            child: Icon(Icons.delete_outline,
                 color: AppColors.red, size: 18),
           ),
         ],
@@ -489,11 +544,13 @@ class _ContentCard extends StatelessWidget {
 class _BossCard extends StatelessWidget {
   final _ContentItem item;
   final VoidCallback onToggle;
+  final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   const _BossCard({
     required this.item,
     required this.onToggle,
+    required this.onEdit,
     required this.onDelete,
   });
 
@@ -507,7 +564,7 @@ class _BossCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color:
-              item.isActive ? AppColors.red.withOpacity(0.3) : AppColors.border,
+              item.isActive ? AppColors.red.withValues(alpha: 0.3) : AppColors.border,
           width: 0.5,
         ),
       ),
@@ -530,7 +587,7 @@ class _BossCard extends StatelessWidget {
                                 item.isActive ? AppColors.red : AppColors.t2)),
                     Text(item.sub,
                         style:
-                            const TextStyle(fontSize: 10, color: AppColors.t3)),
+                            TextStyle(fontSize: 10, color: AppColors.t3)),
                   ],
                 ),
               ),
@@ -541,8 +598,8 @@ class _BossCard extends StatelessWidget {
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: item.isActive
-                        ? AppColors.red.withOpacity(0.12)
-                        : AppColors.t3.withOpacity(0.1),
+                        ? AppColors.red.withValues(alpha: 0.12)
+                        : AppColors.t3.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -556,8 +613,14 @@ class _BossCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               GestureDetector(
+                onTap: onEdit,
+                child: Icon(Icons.edit_outlined,
+                    color: AppColors.gold, size: 18),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
                 onTap: onDelete,
-                child: const Icon(Icons.delete_outline,
+                child: Icon(Icons.delete_outline,
                     color: AppColors.red, size: 18),
               ),
             ],
@@ -569,13 +632,13 @@ class _BossCard extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: item.hp / 100,
                 minHeight: 4,
-                backgroundColor: AppColors.red.withOpacity(0.1),
-                valueColor: const AlwaysStoppedAnimation<Color>(AppColors.red),
+                backgroundColor: AppColors.red.withValues(alpha: 0.1),
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.red),
               ),
             ),
             const SizedBox(height: 4),
             Text('${item.hp}% HP tersisa',
-                style: const TextStyle(fontSize: 9, color: AppColors.t3)),
+                style: TextStyle(fontSize: 9, color: AppColors.t3)),
           ],
         ],
       ),

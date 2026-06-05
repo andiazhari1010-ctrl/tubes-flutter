@@ -31,7 +31,7 @@ class _AdminShellState extends State<AdminShell> {
         decoration: BoxDecoration(
           color: const Color(0xF50D0D1A),
           border: Border(
-            top: BorderSide(color: AppColors.gold.withOpacity(0.2), width: 0.5),
+            top: BorderSide(color: AppColors.gold.withValues(alpha: 0.2), width: 0.5),
           ),
         ),
         child: BottomNavigationBar(

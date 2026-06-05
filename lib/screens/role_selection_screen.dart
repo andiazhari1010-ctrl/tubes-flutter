@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../theme/app_theme.dart';
 import 'main_shell.dart';
 import 'admin/admin_shell.dart';
+import '../services/firestore_service.dart';
 
 class RoleSelectionScreen extends StatefulWidget {
   const RoleSelectionScreen({super.key});
@@ -17,6 +18,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
   late AnimationController _ctrl;
   late Animation<double> _fade;
   late Animation<Offset> _slide;
+  bool _checkingRole = true;
 
   @override
   void initState() {
@@ -26,7 +28,70 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
     _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
     _slide = Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero)
         .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
-    _ctrl.forward();
+    
+    _checkUserRole();
+  }
+
+  void _checkUserRole() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        setState(() {
+          _checkingRole = false;
+        });
+        _ctrl.forward();
+        return;
+      }
+
+      var doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      if (!doc.exists) {
+        final email = user.email ?? '';
+        final roleVal = (email.toLowerCase().contains('admin') || email.toLowerCase().contains('tubaguslinggaap')) ? 'admin' : 'user';
+        final username = email.isNotEmpty ? email.split('@').first : 'new_hero';
+        final fullName = user.displayName ?? 'New Hero';
+
+        await FirestoreService().createUserDoc(
+          uid: user.uid,
+          email: email,
+          role: roleVal,
+          username: username,
+          fullName: fullName,
+          phone: '',
+        );
+
+        doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      }
+
+      String role = doc.data()?['role'] ?? 'user';
+      final email = user.email ?? doc.data()?['email'] ?? '';
+      final isAdm = email.toLowerCase().contains('admin') || email.toLowerCase().contains('tubaguslinggaap');
+      if (isAdm && role != 'admin') {
+        role = 'admin';
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .update({'role': 'admin'});
+      }
+
+      if (mounted) {
+        if (role == 'admin') {
+          setState(() {
+            _checkingRole = false;
+          });
+          _ctrl.forward();
+        } else {
+          // Jika role adalah user biasa, langsung alihkan ke MainShell tanpa memunculkan layar pemilihan
+          _goUser();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _checkingRole = false;
+        });
+        _ctrl.forward();
+      }
+    }
   }
 
   @override
@@ -44,7 +109,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(
+      builder: (context) => Center(
         child: CircularProgressIndicator(color: AppColors.gold),
       ),
     );
@@ -53,18 +118,32 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) throw 'Pengguna tidak ditemukan. Silakan login kembali.';
 
-      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-      if (!doc.exists) throw 'Profil pengguna tidak ditemukan di database.';
+      final email = user.email ?? '';
+      final isAdmEmail = email.toLowerCase().contains('admin') || email.toLowerCase().contains('tubaguslinggaap');
 
-      final role = doc.data()?['role'] ?? 'user';
+      DocumentSnapshot? doc;
+      try {
+        doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      } catch (_) {}
+
+      final docExists = doc != null && doc.exists;
+      String role = 'user';
+      if (docExists) {
+        final data = doc.data() as Map<String, dynamic>?;
+        if (data != null) {
+          role = data['role'] ?? 'user';
+        }
+      }
+
       if (mounted) Navigator.pop(context); // Close loading dialog
 
-      if (role == 'admin') {
+      if (role == 'admin' || isAdmEmail) {
         if (mounted) {
           Navigator.pushReplacement(
               context, MaterialPageRoute(builder: (_) => const AdminShell()));
         }
       } else {
+        if (!docExists) throw 'Profil pengguna tidak ditemukan di database.';
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -95,6 +174,15 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
 
   @override
   Widget build(BuildContext context) {
+    if (_checkingRole) {
+      return Scaffold(
+        backgroundColor: AppColors.c0,
+        body: Center(
+          child: CircularProgressIndicator(color: AppColors.accent),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppColors.c0,
       body: SafeArea(
@@ -111,7 +199,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
                   // Logo & title
                   const Text('🏰', style: TextStyle(fontSize: 56)),
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     'HeroQuest',
                     style: TextStyle(
                       fontFamily: 'Cinzel',
@@ -122,7 +210,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'Masuk sebagai siapa?',
                     style: TextStyle(
                         fontSize: 14, color: AppColors.t3, letterSpacing: 0.3),
@@ -151,7 +239,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
                     subtitle:
                         'Kelola konten game, pantau statistik pengguna, dan moderasi aplikasi.',
                     accentColor: AppColors.gold,
-                    borderColor: AppColors.gold.withOpacity(0.4),
+                    borderColor: AppColors.gold.withValues(alpha: 0.4),
                     onTap: _goAdmin,
                     badges: const [
                       'Dashboard',
@@ -166,8 +254,10 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
 
                   // Back button
                   TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text(
+                    onPressed: () async {
+                      await FirebaseAuth.instance.signOut();
+                    },
+                    child: Text(
                       '← Kembali ke Login',
                       style: TextStyle(fontSize: 12, color: AppColors.t3),
                     ),
@@ -223,12 +313,12 @@ class _RoleCardState extends State<_RoleCard> {
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        transform: Matrix4.identity()..scale(_pressed ? 0.97 : 1.0),
+        transform: Matrix4.diagonal3Values(_pressed ? 0.97 : 1.0, _pressed ? 0.97 : 1.0, 1.0),
         transformAlignment: Alignment.center,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color:
-              widget.isAdmin ? AppColors.gold.withOpacity(0.05) : AppColors.c2,
+              widget.isAdmin ? AppColors.gold.withValues(alpha: 0.05) : AppColors.c2,
           borderRadius: BorderRadius.circular(22),
           border: Border.all(
             color: _pressed ? widget.accentColor : widget.borderColor,
@@ -242,10 +332,10 @@ class _RoleCardState extends State<_RoleCard> {
               width: 58,
               height: 58,
               decoration: BoxDecoration(
-                color: widget.accentColor.withOpacity(0.12),
+                color: widget.accentColor.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
-                    color: widget.accentColor.withOpacity(0.3), width: 0.5),
+                    color: widget.accentColor.withValues(alpha: 0.3), width: 0.5),
               ),
               child: Center(
                 child: Text(widget.emoji, style: const TextStyle(fontSize: 26)),
@@ -272,7 +362,7 @@ class _RoleCardState extends State<_RoleCard> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
-                          color: widget.accentColor.withOpacity(0.15),
+                          color: widget.accentColor.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
@@ -289,7 +379,7 @@ class _RoleCardState extends State<_RoleCard> {
                   const SizedBox(height: 5),
                   Text(
                     widget.subtitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 11, color: AppColors.t3, height: 1.5),
                   ),
                   const SizedBox(height: 10),
@@ -307,7 +397,7 @@ class _RoleCardState extends State<_RoleCard> {
                                     color: AppColors.border, width: 0.5),
                               ),
                               child: Text(b,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                       fontSize: 9,
                                       color: AppColors.t2,
                                       fontWeight: FontWeight.w500)),
@@ -319,7 +409,7 @@ class _RoleCardState extends State<_RoleCard> {
             ),
             const SizedBox(width: 8),
             Icon(Icons.chevron_right_rounded,
-                color: widget.accentColor.withOpacity(0.6), size: 22),
+                color: widget.accentColor.withValues(alpha: 0.6), size: 22),
           ],
         ),
       ),

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
 import '../../theme/app_theme.dart';
 import '../../widgets/common_widgets.dart';
+import '../../services/firestore_service.dart';
 
 class AdminStatsScreen extends StatefulWidget {
   const AdminStatsScreen({super.key});
@@ -13,13 +16,143 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
   String _period = 'Minggu ini';
   final _periods = ['Hari ini', 'Minggu ini', 'Bulan ini'];
 
+  // Dynamic fields loaded from Firestore
+  int _totalTasksCompleted = 0;
+  int _totalUsersCount = 0;
+  int _activeUsersCount = 0;
+  int _totalXpEarned = 0;
+  double _warriorRatio = 0.38;
+  double _mageRatio = 0.30;
+  double _rogueRatio = 0.20;
+  double _healerRatio = 0.12;
+  List<Map<String, String>> _dynamicTopUsers = [];
+
+  late final StreamSubscription<QuerySnapshot> _subscription;
+
+  @override
+  void initState() {
+    super.initState();
+    final service = FirestoreService();
+    _subscription = service.getAllUsersStream().listen((snapshot) {
+      int tasks = 0;
+      int xp = 0;
+      int active = 0;
+      int warriorCount = 0;
+      int mageCount = 0;
+      int rogueCount = 0;
+      int healerCount = 0;
+
+      final usersData = snapshot.docs.map((doc) {
+        final data = doc.data();
+        final hero = data['hero'] as Map<String, dynamic>?;
+        final email = data['email'] ?? '';
+        final fullName = data['fullName'] ?? '';
+        String name = 'Unknown';
+        if (fullName.toString().isNotEmpty) {
+          name = fullName.toString();
+        } else if (email.toString().isNotEmpty) {
+          name = email.toString().split('@').first;
+        }
+
+        int uXp = 0;
+        int uStreak = 0;
+        String heroCls = 'Warrior';
+        if (hero != null) {
+          uXp = (hero['xp'] ?? 0) as int;
+          uStreak = (hero['streak'] ?? 0) as int;
+          heroCls = hero['heroClass'] ?? 'Warrior';
+        }
+
+        tasks += (data['totalTasksCompleted'] ?? 0) as int;
+        xp += uXp;
+        if (uStreak > 0) active++;
+
+        switch (heroCls.toLowerCase()) {
+          case 'warrior':
+            warriorCount++;
+            break;
+          case 'mage':
+            mageCount++;
+            break;
+          case 'rogue':
+            rogueCount++;
+            break;
+          case 'healer':
+            healerCount++;
+            break;
+          default:
+            warriorCount++;
+            break;
+        }
+
+        return {
+          'name': name,
+          'class': heroCls,
+          'xp': uXp,
+          'streak': uStreak,
+        };
+      }).toList();
+
+      // Sort and pick top 5 users
+      usersData.sort((a, b) => (b['xp'] as int).compareTo(a['xp'] as int));
+      final top5 = usersData.take(5).map((u) {
+        String clsEmoji = '⚔️';
+        String clsName = u['class'] as String;
+        switch (clsName.toLowerCase()) {
+          case 'warrior':
+            clsEmoji = '⚔️ Warrior';
+            break;
+          case 'mage':
+            clsEmoji = '🧙 Mage';
+            break;
+          case 'rogue':
+            clsEmoji = '🏹 Rogue';
+            break;
+          case 'healer':
+            clsEmoji = '💚 Healer';
+            break;
+          default:
+            clsEmoji = '⚔️ Warrior';
+            break;
+        }
+        return {
+          'name': u['name'] as String,
+          'class': clsEmoji,
+          'xp': '${u['xp']} XP',
+          'streak': '${u['streak']}',
+        };
+      }).toList();
+
+      final totalCount = snapshot.docs.length;
+      final divisor = totalCount == 0 ? 1 : totalCount;
+
+      setState(() {
+        _totalUsersCount = totalCount;
+        _totalTasksCompleted = tasks;
+        _totalXpEarned = xp;
+        _activeUsersCount = active;
+        _warriorRatio = warriorCount / divisor;
+        _mageRatio = mageCount / divisor;
+        _rogueRatio = rogueCount / divisor;
+        _healerRatio = healerCount / divisor;
+        _dynamicTopUsers = top5;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.c0,
       appBar: AppBar(
         title: const Text('Statistik'),
-        titleTextStyle: const TextStyle(
+        titleTextStyle: TextStyle(
           fontFamily: 'Cinzel',
           fontSize: 17,
           fontWeight: FontWeight.w700,
@@ -39,7 +172,7 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
               child: DropdownButton<String>(
                 value: _period,
                 dropdownColor: AppColors.c2,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 11,
                     color: AppColors.t2,
                     fontWeight: FontWeight.w500),
@@ -47,7 +180,7 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
                     .map((p) => DropdownMenuItem(value: p, child: Text(p)))
                     .toList(),
                 onChanged: (v) => setState(() => _period = v!),
-                icon: const Icon(Icons.keyboard_arrow_down,
+                icon: Icon(Icons.keyboard_arrow_down,
                     color: AppColors.t3, size: 16),
               ),
             ),
@@ -64,7 +197,7 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
               Expanded(
                 child: _KpiCard(
                     label: 'Task Selesai',
-                    value: '230',
+                    value: '$_totalTasksCompleted',
                     change: '+18%',
                     positive: true,
                     emoji: '✅'),
@@ -72,8 +205,8 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
               const SizedBox(width: 10),
               Expanded(
                 child: _KpiCard(
-                    label: 'User Baru',
-                    value: '12',
+                    label: 'Total User',
+                    value: '$_totalUsersCount',
                     change: '+4%',
                     positive: true,
                     emoji: '👤'),
@@ -85,17 +218,17 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
             children: [
               Expanded(
                 child: _KpiCard(
-                    label: 'Habit Rate',
-                    value: '74%',
-                    change: '-2%',
-                    positive: false,
+                    label: 'User Aktif',
+                    value: _totalUsersCount == 0 ? '0%' : '${(_activeUsersCount / _totalUsersCount * 100).toStringAsFixed(0)}%',
+                    change: '+6%',
+                    positive: true,
                     emoji: '🔥'),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: _KpiCard(
-                    label: 'Retensi',
-                    value: '68%',
+                    label: 'Total XP',
+                    value: '$_totalXpEarned',
                     change: '+5%',
                     positive: true,
                     emoji: '📌'),
@@ -106,14 +239,14 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
           // ── Task Completion Bar Chart ──────────────────────────────────
           const SectionTitle('Task Selesai per Hari'),
           _BarChartCard(
-            data: const [
-              _BarData(label: 'Sen', value: 0.65, count: 28),
-              _BarData(label: 'Sel', value: 0.80, count: 35),
-              _BarData(label: 'Rab', value: 0.55, count: 24),
-              _BarData(label: 'Kam', value: 0.90, count: 39),
-              _BarData(label: 'Jum', value: 1.0, count: 43),
-              _BarData(label: 'Sab', value: 0.40, count: 17),
-              _BarData(label: 'Min', value: 0.30, count: 13),
+            data: [
+              const _BarData(label: 'Sen', value: 0.65, count: 28),
+              const _BarData(label: 'Sel', value: 0.80, count: 35),
+              const _BarData(label: 'Rab', value: 0.55, count: 24),
+              const _BarData(label: 'Kam', value: 0.90, count: 39),
+              const _BarData(label: 'Jum', value: 1.0, count: 43),
+              const _BarData(label: 'Sab', value: 0.40, count: 17),
+              const _BarData(label: 'Min', value: 0.30, count: 13),
             ],
             color: AppColors.accent,
           ),
@@ -121,14 +254,14 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
           // ── XP Earned Chart ───────────────────────────────────────────
           const SectionTitle('XP Diperoleh per Hari'),
           _BarChartCard(
-            data: const [
-              _BarData(label: 'Sen', value: 0.50, count: 1200),
-              _BarData(label: 'Sel', value: 0.75, count: 1800),
-              _BarData(label: 'Rab', value: 0.60, count: 1440),
-              _BarData(label: 'Kam', value: 0.85, count: 2040),
-              _BarData(label: 'Jum', value: 0.95, count: 2280),
-              _BarData(label: 'Sab', value: 0.35, count: 840),
-              _BarData(label: 'Min', value: 0.25, count: 600),
+            data: [
+              const _BarData(label: 'Sen', value: 0.50, count: 1200),
+              const _BarData(label: 'Sel', value: 0.75, count: 1800),
+              const _BarData(label: 'Rab', value: 0.60, count: 1440),
+              const _BarData(label: 'Kam', value: 0.85, count: 2040),
+              const _BarData(label: 'Jum', value: 0.95, count: 2280),
+              const _BarData(label: 'Sab', value: 0.35, count: 840),
+              const _BarData(label: 'Min', value: 0.25, count: 600),
             ],
             color: AppColors.xp,
             showXp: true,
@@ -136,23 +269,28 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
 
           // ── Class Distribution ────────────────────────────────────────
           const SectionTitle('Distribusi Class'),
-          _ClassDistributionCard(),
+          _ClassDistributionCard(
+            warriorRatio: _warriorRatio,
+            mageRatio: _mageRatio,
+            rogueRatio: _rogueRatio,
+            healerRatio: _healerRatio,
+          ),
 
           // ── Top Users ─────────────────────────────────────────────────
           const SectionTitle('Top 5 User Minggu Ini'),
-          ..._topUsers.asMap().entries.map(
+          ..._dynamicTopUsers.asMap().entries.map(
                 (e) => _TopUserTile(rank: e.key + 1, data: e.value),
               ),
 
           // ── Reports ───────────────────────────────────────────────────
           const SectionTitle('Laporan Masuk'),
-          _ReportCard(
+          const _ReportCard(
             emoji: '🚩',
             title: 'Konten tidak pantas',
             sub: 'Dilaporkan oleh 2 user · Perlu ditinjau',
             urgent: true,
           ),
-          _ReportCard(
+          const _ReportCard(
             emoji: '⚠️',
             title: 'Bug: HP tidak berkurang',
             sub: 'Dilaporkan 1x · Class Healer',
@@ -202,8 +340,8 @@ class _KpiCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: positive
-                      ? AppColors.xp.withOpacity(0.12)
-                      : AppColors.red.withOpacity(0.12),
+                      ? AppColors.xp.withValues(alpha: 0.12)
+                      : AppColors.red.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(change,
@@ -216,7 +354,7 @@ class _KpiCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Cinzel',
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
@@ -224,7 +362,7 @@ class _KpiCard extends StatelessWidget {
               )),
           const SizedBox(height: 2),
           Text(label,
-              style: const TextStyle(fontSize: 10, color: AppColors.t3)),
+              style: TextStyle(fontSize: 10, color: AppColors.t3)),
         ],
       ),
     );
@@ -289,7 +427,7 @@ class _BarChartCard extends StatelessWidget {
                           duration: const Duration(milliseconds: 400),
                           height: 80 * d.value,
                           decoration: BoxDecoration(
-                            color: color.withOpacity(0.7),
+                            color: color.withValues(alpha: 0.7),
                             borderRadius: BorderRadius.circular(4),
                           ),
                         ),
@@ -306,7 +444,7 @@ class _BarChartCard extends StatelessWidget {
               return Expanded(
                 child: Text(d.label,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 9, color: AppColors.t3)),
+                    style: TextStyle(fontSize: 9, color: AppColors.t3)),
               );
             }).toList(),
           ),
@@ -318,15 +456,25 @@ class _BarChartCard extends StatelessWidget {
 
 // ── Class Distribution Card ───────────────────────────────────────────────────
 class _ClassDistributionCard extends StatelessWidget {
-  const _ClassDistributionCard();
+  final double warriorRatio;
+  final double mageRatio;
+  final double rogueRatio;
+  final double healerRatio;
+
+  const _ClassDistributionCard({
+    required this.warriorRatio,
+    required this.mageRatio,
+    required this.rogueRatio,
+    required this.healerRatio,
+  });
 
   @override
   Widget build(BuildContext context) {
     final classes = [
-      ('⚔️', 'Warrior', 0.38, AppColors.accent),
-      ('🧙', 'Mage', 0.30, const Color(0xFF185FA5)),
-      ('🏹', 'Rogue', 0.20, AppColors.gold),
-      ('💚', 'Healer', 0.12, AppColors.xp),
+      ('⚔️', 'Warrior', warriorRatio, AppColors.accent),
+      ('🧙', 'Mage', mageRatio, const Color(0xFF185FA5)),
+      ('🏹', 'Rogue', rogueRatio, AppColors.gold),
+      ('💚', 'Healer', healerRatio, AppColors.xp),
     ];
 
     return Container(
@@ -349,7 +497,7 @@ class _ClassDistributionCard extends StatelessWidget {
                 SizedBox(
                   width: 54,
                   child: Text(name,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
                           color: AppColors.t2)),
@@ -384,15 +532,7 @@ class _ClassDistributionCard extends StatelessWidget {
   }
 }
 
-// ── Top Users ─────────────────────────────────────────────────────────────────
-final _topUsers = [
-  {'name': 'Zhielton', 'class': '🧙 Mage', 'xp': '4,200 XP', 'streak': '14'},
-  {'name': 'Lingga', 'class': '⚔️ Warrior', 'xp': '3,580 XP', 'streak': '7'},
-  {'name': 'Yafi', 'class': '🏹 Rogue', 'xp': '3,100 XP', 'streak': '5'},
-  {'name': 'Agus M.', 'class': '🧙 Mage', 'xp': '2,800 XP', 'streak': '4'},
-  {'name': 'Andy', 'class': '⚔️ Warrior', 'xp': '2,560 XP', 'streak': '3'},
-];
-
+// ── Top User Tile ─────────────────────────────────────────────────────────────
 class _TopUserTile extends StatelessWidget {
   final int rank;
   final Map<String, String> data;
@@ -401,14 +541,15 @@ class _TopUserTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Color rankColor;
-    if (rank == 1)
+    if (rank == 1) {
       rankColor = AppColors.gold;
-    else if (rank == 2)
+    } else if (rank == 2) {
       rankColor = const Color(0xFFB4B2A9);
-    else if (rank == 3)
+    } else if (rank == 3) {
       rankColor = const Color(0xFFEF9F27);
-    else
+    } else {
       rankColor = AppColors.t3;
+    }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 7),
@@ -417,7 +558,7 @@ class _TopUserTile extends StatelessWidget {
         color: AppColors.c1,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: rank <= 3 ? rankColor.withOpacity(0.3) : AppColors.border,
+          color: rank <= 3 ? rankColor.withValues(alpha: 0.3) : AppColors.border,
           width: 0.5,
         ),
       ),
@@ -440,12 +581,12 @@ class _TopUserTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(data['name']!,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                         color: AppColors.t1)),
                 Text(data['class']!,
-                    style: const TextStyle(fontSize: 10, color: AppColors.t3)),
+                    style: TextStyle(fontSize: 10, color: AppColors.t3)),
               ],
             ),
           ),
@@ -453,12 +594,12 @@ class _TopUserTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(data['xp']!,
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: AppColors.xp)),
               Text('🔥 ${data['streak']!} streak',
-                  style: const TextStyle(fontSize: 9, color: AppColors.gold2)),
+                  style: TextStyle(fontSize: 9, color: AppColors.gold2)),
             ],
           ),
         ],
@@ -490,7 +631,7 @@ class _ReportCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.c1,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withOpacity(0.25), width: 0.5),
+        border: Border.all(color: color.withValues(alpha: 0.25), width: 0.5),
       ),
       child: Row(
         children: [
@@ -501,19 +642,19 @@ class _ReportCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(title,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                         color: AppColors.t1)),
                 Text(sub,
-                    style: const TextStyle(fontSize: 10, color: AppColors.t3)),
+                    style: TextStyle(fontSize: 10, color: AppColors.t3)),
               ],
             ),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
+              color: color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(urgent ? 'Urgent' : 'Review',

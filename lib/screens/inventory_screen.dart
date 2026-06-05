@@ -100,7 +100,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: active ? AppColors.accent.withOpacity(0.2) : AppColors.c2,
+          color: active ? AppColors.accent.withValues(alpha: 0.2) : AppColors.c2,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: active ? AppColors.accent : AppColors.border,
@@ -124,14 +124,14 @@ class _InventoryScreenState extends State<InventoryScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text('📭', style: TextStyle(fontSize: 64)),
-          const SizedBox(height: 16),
-          const Text(
+          Text('📭', style: TextStyle(fontSize: 64)),
+          SizedBox(height: 16),
+          Text(
             'Inventory is empty',
             style: TextStyle(fontSize: 16, color: AppColors.t1, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 8),
-          const Text(
+          SizedBox(height: 8),
+          Text(
             'Gunakan gold-mu di shop untuk\nmencari gear hebat!',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 12, color: AppColors.t3),
@@ -147,7 +147,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AppColors.c1,
           borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
         ),
@@ -168,7 +168,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
             const SizedBox(height: 16),
             Text(
               item.name,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Cinzel',
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -179,12 +179,12 @@ class _InventoryScreenState extends State<InventoryScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
-                color: AppColors.accent.withOpacity(0.1),
+                color: AppColors.accent.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
                 item.category.name.toUpperCase(),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
                   color: AppColors.accent2,
@@ -208,7 +208,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                       ),
                       child: Text(
                         '${e.key.toUpperCase()} +${e.value}',
-                        style: const TextStyle(fontSize: 10, color: AppColors.green, fontWeight: FontWeight.bold),
+                        style: TextStyle(fontSize: 10, color: AppColors.green, fontWeight: FontWeight.bold),
                       ),
                     );
                   }).toList(),
@@ -217,7 +217,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
             Text(
               item.description,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 14, color: AppColors.t2, height: 1.5),
+              style: TextStyle(fontSize: 14, color: AppColors.t2, height: 1.5),
             ),
             const SizedBox(height: 32),
             Row(
@@ -230,10 +230,10 @@ class _InventoryScreenState extends State<InventoryScreen> {
                     },
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      side: const BorderSide(color: AppColors.red, width: 0.5),
+                      side: BorderSide(color: AppColors.red, width: 0.5),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     ),
-                    child: const Text('JUAL (50%)', style: TextStyle(color: AppColors.red, fontSize: 13, fontWeight: FontWeight.bold)),
+                    child: Text('JUAL (50%)', style: TextStyle(color: AppColors.red, fontSize: 13, fontWeight: FontWeight.bold)),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -279,12 +279,12 @@ class _InventoryItemCard extends StatelessWidget {
           color: AppColors.c2,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: item.isEquipped ? AppColors.gold : item.rarityColor.withOpacity(0.4),
+            color: item.isEquipped ? AppColors.gold : item.rarityColor.withValues(alpha: 0.4),
             width: item.isEquipped ? 2 : 1,
           ),
           boxShadow: item.isEquipped
-              ? [BoxShadow(color: AppColors.gold.withOpacity(0.2), blurRadius: 10, spreadRadius: 1)]
-              : [BoxShadow(color: item.rarityColor.withOpacity(0.05), blurRadius: 5)],
+              ? [BoxShadow(color: AppColors.gold.withValues(alpha: 0.2), blurRadius: 10, spreadRadius: 1)]
+              : [BoxShadow(color: item.rarityColor.withValues(alpha: 0.05), blurRadius: 5)],
         ),
         child: Stack(
           children: [
@@ -317,7 +317,7 @@ class _InventoryItemCard extends StatelessWidget {
                 right: 8,
                 child: Container(
                   padding: const EdgeInsets.all(2),
-                  decoration: const BoxDecoration(color: AppColors.gold, shape: BoxShape.circle),
+                  decoration: BoxDecoration(color: AppColors.gold, shape: BoxShape.circle),
                   child: const Icon(Icons.check, size: 10, color: Colors.black),
                 ),
               ),

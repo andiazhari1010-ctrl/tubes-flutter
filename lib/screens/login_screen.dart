@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
-import 'role_selection_screen.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 class LoginScreen extends StatefulWidget {
@@ -13,21 +12,47 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
+  final _usernameCtrl = TextEditingController();
+  final _fullNameCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
   bool _obscure = true;
   bool _isLogin = true;
   bool _isLoading = false;
   final _authService = AuthService();
   final _firestoreService = FirestoreService();
 
+  @override
+  void dispose() {
+    _emailCtrl.dispose();
+    _passCtrl.dispose();
+    _usernameCtrl.dispose();
+    _fullNameCtrl.dispose();
+    _phoneCtrl.dispose();
+    super.dispose();
+  }
+
   void _submit() async {
     final email = _emailCtrl.text.trim();
     final pass = _passCtrl.text.trim();
 
-    if (email.isEmpty || pass.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Email dan Password harus diisi')),
-      );
-      return;
+    if (_isLogin) {
+      if (email.isEmpty || pass.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Email dan Password harus diisi')),
+        );
+        return;
+      }
+    } else {
+      final username = _usernameCtrl.text.trim();
+      final fullName = _fullNameCtrl.text.trim();
+      final phone = _phoneCtrl.text.trim();
+
+      if (username.isEmpty || fullName.isEmpty || phone.isEmpty || email.isEmpty || pass.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Semua kolom harus diisi untuk mendaftar')),
+        );
+        return;
+      }
     }
 
     setState(() {
@@ -39,16 +64,164 @@ class _LoginScreenState extends State<LoginScreen> {
         await _authService.signInWithEmail(email, pass);
         // Jika berhasil, AuthWrapper otomatis akan pindah ke RoleSelectionScreen
       } else {
+        final username = _usernameCtrl.text.trim();
+        final fullName = _fullNameCtrl.text.trim();
+        final phone = _phoneCtrl.text.trim();
+
         final cred = await _authService.registerWithEmail(email, pass);
         if (cred?.user != null) {
-          await _firestoreService.createUserDoc(cred!.user!.uid, email, 'user');
+          final isAdm = email.toLowerCase().contains('admin') || email.toLowerCase().contains('tubaguslinggaap');
+          await _firestoreService.createUserDoc(
+            uid: cred!.user!.uid,
+            email: email,
+            role: isAdm ? 'admin' : 'user',
+            username: username,
+            fullName: fullName,
+            phone: phone,
+          );
         }
         // Sama, otomatis pindah
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  void _signInWithGoogle() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final cred = await _authService.signInWithGoogle();
+      if (cred == null) {
+        return; // User cancelled
+      }
+
+      final user = cred.user;
+      if (user != null) {
+        final exists = await _firestoreService.userDocExists(user.uid);
+        if (!exists) {
+          // Buat dokumen baru di Firestore untuk pengguna baru Google
+          final isAdm = (user.email ?? '').toLowerCase().contains('admin') || (user.email ?? '').toLowerCase().contains('tubaguslinggaap');
+          await _firestoreService.createUserDoc(
+            uid: user.uid,
+            email: user.email ?? '',
+            role: isAdm ? 'admin' : 'user',
+            username: user.displayName?.replaceAll(' ', '').toLowerCase() ?? 'user_${user.uid.substring(0, 5)}',
+            fullName: user.displayName ?? 'New Hero',
+            phone: user.phoneNumber ?? '',
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Google Sign-In Error: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  void _forgotPassword() async {
+    final email = _emailCtrl.text.trim();
+    if (email.isEmpty) {
+      final resetEmailCtrl = TextEditingController();
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: AppColors.c1,
+          title: Text(
+            'Reset Password',
+            style: TextStyle(color: AppColors.t1, fontFamily: 'Cinzel', fontSize: 20),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Masukkan email Anda untuk menerima tautan penyetelan ulang kata sandi.',
+                style: TextStyle(color: AppColors.t3, fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              _buildInput(
+                controller: resetEmailCtrl,
+                hint: 'Email Anda',
+                icon: Icons.email_outlined,
+                keyboardType: TextInputType.emailAddress,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Batal', style: TextStyle(color: AppColors.t3)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final resetEmail = resetEmailCtrl.text.trim();
+                if (resetEmail.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Email harus diisi')),
+                  );
+                  return;
+                }
+                Navigator.pop(context);
+                await _sendResetLink(resetEmail);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.accent,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Kirim'),
+            ),
+          ],
+        ),
       );
+    } else {
+      await _sendResetLink(email);
+    }
+  }
+
+  Future<void> _sendResetLink(String email) async {
+    setState(() {
+      _isLoading = true;
+    });
+    try {
+      await _authService.sendPasswordResetEmail(email);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Tautan reset password telah dikirim ke $email'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal mengirim tautan: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -70,7 +243,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 60),
               const Text('🏰', style: TextStyle(fontSize: 56)),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 'HeroQuest',
                 style: TextStyle(
                   fontFamily: 'Cinzel',
@@ -80,12 +253,39 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 'Gamified Task Management',
                 style: TextStyle(
                     fontSize: 13, color: AppColors.t3, letterSpacing: 0.5),
               ),
               const SizedBox(height: 48),
+
+              // Username (hanya untuk register)
+              if (!_isLogin) ...[
+                _buildInput(
+                  controller: _usernameCtrl,
+                  hint: 'Username kamu',
+                  icon: Icons.alternate_email_rounded,
+                ),
+                const SizedBox(height: 12),
+                
+                // Nama Lengkap (hanya untuk register)
+                _buildInput(
+                  controller: _fullNameCtrl,
+                  hint: 'Nama Lengkap kamu',
+                  icon: Icons.badge_outlined,
+                ),
+                const SizedBox(height: 12),
+                
+                // No Telepon (hanya untuk register)
+                _buildInput(
+                  controller: _phoneCtrl,
+                  hint: 'Nomor Telepon kamu',
+                  icon: Icons.phone_android_rounded,
+                  keyboardType: TextInputType.phone,
+                ),
+                const SizedBox(height: 12),
+              ],
 
               // Email
               _buildInput(
@@ -119,8 +319,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
-                    onPressed: () {},
-                    child: const Text('Lupa password?',
+                    onPressed: _forgotPassword,
+                    child: Text('Lupa password?',
                         style:
                             TextStyle(fontSize: 12, color: AppColors.accent2)),
                   ),
@@ -160,7 +360,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   Expanded(
                       child: Divider(color: AppColors.border, thickness: 0.5)),
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.symmetric(horizontal: 12),
                     child: Text('atau',
                         style: TextStyle(fontSize: 11, color: AppColors.t3)),
@@ -175,7 +375,7 @@ class _LoginScreenState extends State<LoginScreen> {
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: _submit,
+                  onPressed: _isLoading ? null : _signInWithGoogle,
                   icon: const Text('🌐', style: TextStyle(fontSize: 16)),
                   label: const Text('Lanjut dengan Google'),
                   style: OutlinedButton.styleFrom(
@@ -196,13 +396,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   Text(
                     _isLogin ? 'Belum punya akun? ' : 'Sudah punya akun? ',
-                    style: const TextStyle(fontSize: 12, color: AppColors.t3),
+                    style: TextStyle(fontSize: 12, color: AppColors.t3),
                   ),
                   GestureDetector(
                     onTap: () => setState(() => _isLogin = !_isLogin),
                     child: Text(
                       _isLogin ? 'Daftar gratis' : 'Masuk',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 12, color: AppColors.accent2),
                     ),
                   ),
@@ -228,10 +428,10 @@ class _LoginScreenState extends State<LoginScreen> {
       controller: controller,
       obscureText: obscure,
       keyboardType: keyboardType,
-      style: const TextStyle(fontSize: 13, color: AppColors.t1),
+      style: TextStyle(fontSize: 13, color: AppColors.t1),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(color: AppColors.t3),
+        hintStyle: TextStyle(color: AppColors.t3),
         prefixIcon: Icon(icon, color: AppColors.t3, size: 18),
         suffixIcon: suffix,
         filled: true,
@@ -244,7 +444,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.accent, width: 1),
+          borderSide: BorderSide(color: AppColors.accent, width: 1),
         ),
       ),
     );

@@ -114,7 +114,7 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
         backgroundColor: Colors.transparent,
         title: const Text('FOCUS ORB'),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppColors.t2),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppColors.t2),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -126,7 +126,7 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
               const SizedBox(height: 20),
               
               // Minimal instructions
-              const Text(
+              Text(
                 'Masuk ke hyper-focus mode. Selesaikan sesi untuk mendapatkan XP bonus.',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 12, color: AppColors.t2, height: 1.5),
@@ -145,12 +145,12 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
                     color: const Color(0xFF0F0F26),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.accent.withOpacity(_isRunning ? 0.35 : 0.15),
+                        color: AppColors.accent.withValues(alpha: _isRunning ? 0.35 : 0.15),
                         blurRadius: 36,
                         spreadRadius: 2,
                       ),
                       BoxShadow(
-                        color: const Color(0xFF00FFFF).withOpacity(_isRunning ? 0.15 : 0.05),
+                        color: const Color(0xFF00FFFF).withValues(alpha: _isRunning ? 0.15 : 0.05),
                         blurRadius: 20,
                         spreadRadius: -4,
                       ),
@@ -170,7 +170,7 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
                         child: CircularProgressIndicator(
                           value: progress,
                           strokeWidth: 5,
-                          backgroundColor: Colors.white.withOpacity(0.04),
+                          backgroundColor: Colors.white.withValues(alpha: 0.04),
                           valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF00FFFF)),
                         ),
                       ),
@@ -186,7 +186,7 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
                           const SizedBox(height: 12),
                           Text(
                             _formatTime(_secondsRemaining),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 36,
                               fontWeight: FontWeight.w800,
                               color: AppColors.t1,
@@ -246,7 +246,7 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
                       margin: const EdgeInsets.symmetric(horizontal: 6),
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                       decoration: BoxDecoration(
-                        color: sel ? AppColors.accent.withOpacity(0.15) : AppColors.c1,
+                        color: sel ? AppColors.accent.withValues(alpha: 0.15) : AppColors.c1,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: sel ? AppColors.accent : AppColors.border,
@@ -308,7 +308,7 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.accent.withOpacity(0.3),
+                            color: AppColors.accent.withValues(alpha: 0.3),
                             blurRadius: 16,
                             spreadRadius: 2,
                           ),
@@ -334,7 +334,7 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
                         shape: BoxShape.circle,
                         border: Border.all(color: AppColors.border, width: 0.5),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.replay_rounded,
                         color: AppColors.t2,
                         size: 20,
@@ -359,16 +359,16 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'Soundscape:',
                         style: TextStyle(fontSize: 11, color: AppColors.t2, fontWeight: FontWeight.w600),
                       ),
                       DropdownButton<String>(
                         value: _activeSound,
                         dropdownColor: AppColors.c2,
-                        icon: const Icon(Icons.arrow_drop_down, color: AppColors.accent),
+                        icon: Icon(Icons.arrow_drop_down, color: AppColors.accent),
                         underline: const SizedBox(),
-                        style: const TextStyle(fontSize: 11, color: AppColors.t1, fontWeight: FontWeight.w600),
+                        style: TextStyle(fontSize: 11, color: AppColors.t1, fontWeight: FontWeight.w600),
                         items: _soundTracks.map((String sound) {
                           return DropdownMenuItem<String>(
                             value: sound,

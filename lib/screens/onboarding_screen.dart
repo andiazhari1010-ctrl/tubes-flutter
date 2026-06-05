@@ -53,7 +53,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     Text(
                       _pages[_page].title,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Cinzel',
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
@@ -65,7 +65,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     Text(
                       _pages[_page].subtitle,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 14,
                           color: AppColors.t2,
                           height: 1.6),

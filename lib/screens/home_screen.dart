@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
 import '../models/app_state.dart';
+import '../models/models.dart';
 import '../widgets/common_widgets.dart';
 import 'shop_screen.dart';
 
@@ -31,14 +32,14 @@ class HomeScreen extends StatelessWidget {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Selamat pagi,',
+                          Text('Selamat pagi,',
                               style: TextStyle(
                                   fontSize: 11,
                                   color: AppColors.t3,
                                   fontWeight: FontWeight.w500)),
                           Text(
                             '${hero.name.split(' ').first} ${hero.classEmoji}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontFamily: 'Cinzel',
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
@@ -53,19 +54,26 @@ class HomeScreen extends StatelessWidget {
                           Stack(
                             clipBehavior: Clip.none,
                             children: [
-                              _iconBtn('🔔', onTap: () {}),
-                              Positioned(
-                                top: -2, right: -2,
-                                child: Container(
-                                  width: 8, height: 8,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.red,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                        color: AppColors.c0, width: 1.5),
+                              _iconBtn(
+                                '🔔',
+                                onTap: () {
+                                  state.markNotificationsAsRead();
+                                  _showNotificationsSheet(context, state);
+                                },
+                              ),
+                              if (state.hasUnreadNotifications)
+                                Positioned(
+                                  top: -2, right: -2,
+                                  child: Container(
+                                    width: 8, height: 8,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.red,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                          color: AppColors.c0, width: 1.5),
+                                    ),
                                   ),
                                 ),
-                              ),
                             ],
                           ),
                           const SizedBox(width: 8),
@@ -144,7 +152,7 @@ class HomeScreen extends StatelessWidget {
                                       CrossAxisAlignment.start,
                                   children: [
                                     Text(hero.name,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontFamily: 'Cinzel',
                                           fontSize: 14,
                                           color: AppColors.t1,
@@ -152,7 +160,7 @@ class HomeScreen extends StatelessWidget {
                                     const SizedBox(height: 3),
                                     Text(
                                       '${hero.classEmoji} ${hero.className} · Kelompok 6',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                           fontSize: 11,
                                           color: AppColors.accent2,
                                           fontWeight: FontWeight.w500),
@@ -201,7 +209,7 @@ class HomeScreen extends StatelessWidget {
                                             borderRadius: BorderRadius.circular(99),
                                             boxShadow: [
                                               BoxShadow(
-                                                color: const Color(0xFF00E5FF).withOpacity(0.35),
+                                                color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
                                                 blurRadius: 6,
                                                 spreadRadius: 0.5,
                                               ),
@@ -213,7 +221,7 @@ class HomeScreen extends StatelessWidget {
                                           child: LinearProgressIndicator(
                                             value: hero.momentum / 100.0,
                                             minHeight: 6,
-                                            backgroundColor: Colors.white.withOpacity(0.07),
+                                            backgroundColor: Colors.white.withValues(alpha: 0.07),
                                             valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF00E5FF)),
                                           ),
                                         ),
@@ -269,12 +277,12 @@ class HomeScreen extends StatelessWidget {
                           border: Border.all(
                             color: state.hasClaimedDaily 
                                 ? AppColors.border 
-                                : AppColors.gold.withOpacity(0.4),
+                                : AppColors.gold.withValues(alpha: 0.4),
                             width: 0.5,
                           ),
                           boxShadow: state.hasClaimedDaily ? [] : [
                             BoxShadow(
-                              color: AppColors.gold.withOpacity(0.05),
+                              color: AppColors.gold.withValues(alpha: 0.05),
                               blurRadius: 10,
                               spreadRadius: 1,
                             ),
@@ -310,7 +318,7 @@ class HomeScreen extends StatelessWidget {
                                     state.hasClaimedDaily
                                         ? 'Kembali besok untuk mempertahankan streak Anda.'
                                         : 'Klaim hadiah streak harian Anda sekarang!',
-                                    style: const TextStyle(fontSize: 9, color: AppColors.t3),
+                                    style: TextStyle(fontSize: 9, color: AppColors.t3),
                                   ),
                                 ],
                               ),
@@ -322,13 +330,13 @@ class HomeScreen extends StatelessWidget {
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                                   decoration: BoxDecoration(
-                                    gradient: const LinearGradient(
+                                    gradient: LinearGradient(
                                       colors: [AppColors.gold, Color(0xFFFF9800)],
                                     ),
                                     borderRadius: BorderRadius.circular(10),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: AppColors.gold.withOpacity(0.3),
+                                        color: AppColors.gold.withValues(alpha: 0.3),
                                         blurRadius: 8,
                                         spreadRadius: 1,
                                       ),
@@ -352,7 +360,7 @@ class HomeScreen extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(color: AppColors.border, width: 0.5),
                                 ),
-                                child: const Text(
+                                child: Text(
                                   'SELESAI',
                                   style: TextStyle(
                                     fontSize: 9,
@@ -367,7 +375,44 @@ class HomeScreen extends StatelessWidget {
 
                       const SectionTitle('Active Quest'),
                       ...state.quests
+                          .where((q) => !state.globalQuests.any((gq) => gq.id == q.id) && !state.globalBosses.any((gb) => gb.id == q.id))
                           .map((q) => QuestCard(quest: q)),
+
+                      const SectionTitle('Quest Komunitas & Boss'),
+                      if (state.globalQuests.where((q) => q.progress > 0).isEmpty &&
+                          state.globalBosses.where((b) => b.progress > 0).isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Text(
+                            'Tidak ada Quest Komunitas atau Boss aktif',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.t3,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        )
+                      else ...[
+                        ...state.globalQuests
+                            .where((gq) => gq.progress > 0)
+                            .map((gq) {
+                              final userQuest = state.quests.firstWhere(
+                                (q) => q.id == gq.id,
+                                orElse: () => QuestModel(
+                                  id: gq.id,
+                                  title: gq.title,
+                                  progress: 0,
+                                  xpReward: gq.xpReward,
+                                  timeLeft: gq.timeLeft,
+                                  isBoss: gq.isBoss,
+                                ),
+                              );
+                              return QuestCard(quest: userQuest);
+                            }),
+                        ...state.globalBosses
+                            .where((b) => b.progress > 0)
+                            .map((b) => QuestCard(quest: b)),
+                      ],
 
                       const SectionTitle('Today'),
                       ...todayTasks.map((t) => TaskItem(
@@ -401,6 +446,109 @@ class HomeScreen extends StatelessWidget {
           child: Text(icon, style: const TextStyle(fontSize: 15)),
         ),
       ),
+    );
+  }
+
+  void _showNotificationsSheet(BuildContext context, AppState state) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.c2,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return Consumer<AppState>(
+          builder: (context, state, _) {
+            final list = state.notificationHistory;
+            return Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 36,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.t3,
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'PEMBERITAHUAN',
+                        style: TextStyle(
+                          fontFamily: 'Cinzel',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.gold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      if (list.isNotEmpty)
+                        GestureDetector(
+                          onTap: () => state.clearNotifications(),
+                          child: Text(
+                            'Bersihkan',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.red,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: list.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Text('🔔', style: TextStyle(fontSize: 32)),
+                                const SizedBox(height: 10),
+                                Text(
+                                  'Tidak ada notifikasi baru',
+                                  style: TextStyle(color: AppColors.t3, fontSize: 12, fontStyle: FontStyle.italic),
+                                ),
+                              ],
+                            ),
+                          )
+                        : ListView.separated(
+                            itemCount: list.length,
+                            separatorBuilder: (_, __) => Divider(color: AppColors.border, height: 1, thickness: 0.5),
+                            itemBuilder: (context, index) {
+                              final msg = list[index];
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                child: Row(
+                                  children: [
+                                    const Text('🔔', style: TextStyle(fontSize: 16)),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        msg,
+                                        style: TextStyle(color: AppColors.t1, fontSize: 12, fontWeight: FontWeight.w500),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

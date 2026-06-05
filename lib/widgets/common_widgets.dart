@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../models/models.dart';
+import 'package:provider/provider.dart';
+import '../models/app_state.dart';
 
 // ─── Stat Bar ──────────────────────────────────────────────────────────────
 class StatBar extends StatelessWidget {
@@ -36,7 +38,7 @@ class StatBar extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: value / maxValue,
                 minHeight: 6,
-                backgroundColor: Colors.white.withOpacity(0.07),
+                backgroundColor: Colors.white.withValues(alpha: 0.07),
                 valueColor: AlwaysStoppedAnimation<Color>(color),
               ),
             ),
@@ -69,9 +71,9 @@ class CurrencyChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.04),
+          color: Colors.white.withValues(alpha: 0.04),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withOpacity(0.07), width: 0.5),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.07), width: 0.5),
         ),
         child: Row(
           children: [
@@ -81,12 +83,12 @@ class CurrencyChip extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(value,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: AppColors.t1)),
                 Text(label.toUpperCase(),
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 9,
                         color: AppColors.t3,
                         letterSpacing: 0.5)),
@@ -112,7 +114,7 @@ class SectionTitle extends StatelessWidget {
         children: [
           Text(
             title.toUpperCase(),
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Cinzel',
               fontSize: 11,
               color: AppColors.t3,
@@ -175,13 +177,20 @@ class PriorityDot extends StatelessWidget {
 class TaskItem extends StatelessWidget {
   final TaskModel task;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
-  const TaskItem({super.key, required this.task, required this.onTap});
+  const TaskItem({
+    super.key,
+    required this.task,
+    required this.onTap,
+    this.onLongPress,
+  });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
+      onLongPress: onLongPress,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         margin: const EdgeInsets.only(bottom: 8),
@@ -190,7 +199,7 @@ class TaskItem extends StatelessWidget {
           color: AppColors.c1,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: task.isDone ? AppColors.accent.withOpacity(0.4) : AppColors.border,
+            color: task.isDone ? AppColors.accent.withValues(alpha: 0.4) : AppColors.border,
             width: 0.5,
           ),
         ),
@@ -228,7 +237,7 @@ class TaskItem extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(task.subtitle,
-                      style: const TextStyle(fontSize: 10, color: AppColors.t3)),
+                      style: TextStyle(fontSize: 10, color: AppColors.t3)),
                 ],
               ),
             ),
@@ -238,14 +247,14 @@ class TaskItem extends StatelessWidget {
               children: [
                 RewardPill(
                   text: '+${task.xpReward} XP',
-                  bg: AppColors.xp.withOpacity(0.15),
+                  bg: AppColors.xp.withValues(alpha: 0.15),
                   fg: AppColors.xp,
                 ),
                 if (task.goldReward > 0) ...[
                   const SizedBox(height: 3),
                   RewardPill(
                     text: '+${task.goldReward}G',
-                    bg: AppColors.gold.withOpacity(0.15),
+                    bg: AppColors.gold.withValues(alpha: 0.15),
                     fg: AppColors.gold,
                   ),
                 ],
@@ -263,65 +272,71 @@ class HabitItem extends StatelessWidget {
   final HabitModel habit;
   final Color iconBg;
   final Function(bool) onAction;
+  final VoidCallback? onLongPress;
 
-  const HabitItem(
-      {super.key,
-      required this.habit,
-      required this.iconBg,
-      required this.onAction});
+  const HabitItem({
+    super.key,
+    required this.habit,
+    required this.iconBg,
+    required this.onAction,
+    this.onLongPress,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
-      decoration: BoxDecoration(
-        color: AppColors.c1,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border, width: 0.5),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 36, height: 36,
-            decoration: BoxDecoration(
-              color: iconBg,
-              borderRadius: BorderRadius.circular(12),
+    return GestureDetector(
+      onLongPress: onLongPress,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+        decoration: BoxDecoration(
+          color: AppColors.c1,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.border, width: 0.5),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36, height: 36,
+              decoration: BoxDecoration(
+                color: iconBg,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: Text(habit.emoji, style: const TextStyle(fontSize: 16)),
+              ),
             ),
-            child: Center(
-              child: Text(habit.emoji, style: const TextStyle(fontSize: 16)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(habit.title,
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.t1)),
+                  const SizedBox(height: 2),
+                  Text(
+                    habit.streak > 0
+                        ? '🔥 ${habit.streak} hari streak'
+                        : '⭐ Baru dimulai',
+                    style: TextStyle(fontSize: 10, color: AppColors.gold2),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            Row(
               children: [
-                Text(habit.title,
-                    style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.t1)),
-                const SizedBox(height: 2),
-                Text(
-                  habit.streak > 0
-                      ? '🔥 ${habit.streak} hari streak'
-                      : '⭐ Baru dimulai',
-                  style: const TextStyle(fontSize: 10, color: AppColors.gold2),
-                ),
+                _habitBtn('+', AppColors.xp.withValues(alpha: 0.4), AppColors.xp,
+                    () => onAction(true)),
+                const SizedBox(width: 6),
+                _habitBtn('–', AppColors.red.withValues(alpha: 0.4), AppColors.red,
+                    () => onAction(false)),
               ],
             ),
-          ),
-          Row(
-            children: [
-              _habitBtn('+', AppColors.xp.withOpacity(0.4), AppColors.xp,
-                  () => onAction(true)),
-              const SizedBox(width: 6),
-              _habitBtn('–', AppColors.red.withOpacity(0.4), AppColors.red,
-                  () => onAction(false)),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -351,66 +366,188 @@ class QuestCard extends StatelessWidget {
   final QuestModel quest;
   const QuestCard({super.key, required this.quest});
 
+  void _showQuestActionSheet(BuildContext context) {
+    final state = Provider.of<AppState>(context, listen: false);
+    final isDone = quest.isBoss ? (quest.progress <= 0) : (quest.progress >= 100);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.c2,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.t3,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Text(
+                    quest.isBoss ? '💀' : '📚',
+                    style: const TextStyle(fontSize: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          quest.title,
+                          style: TextStyle(
+                            fontFamily: 'Cinzel',
+                            fontSize: 15,
+                            color: AppColors.gold,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          quest.isBoss ? 'Quest Boss Komunitas' : 'Quest Harian Komunitas',
+                          style: TextStyle(fontSize: 10, color: AppColors.t3),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                quest.isBoss
+                    ? 'Serang boss ini bersama party Anda! Setiap serangan manual mengurangi HP boss.'
+                    : 'Kerjakan tugas harian atau klik tombol di bawah untuk melaporkan progress quest ini.',
+                style: TextStyle(fontSize: 12, color: AppColors.t2),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    quest.isBoss ? 'HP Boss: ${quest.progress}%' : 'Progress: ${quest.progress}%',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: quest.isBoss ? AppColors.red : AppColors.accent,
+                    ),
+                  ),
+                  Text(
+                    'Hadiah: +${quest.xpReward} XP',
+                    style: TextStyle(fontSize: 13, color: AppColors.xp, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: isDone ? null : () {
+                    Navigator.pop(ctx);
+                    if (quest.isBoss) {
+                      state.attackGlobalBoss(quest.id);
+                    } else {
+                      state.progressQuest(quest.id);
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isDone ? AppColors.border : (quest.isBoss ? AppColors.red : AppColors.accent),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    isDone 
+                      ? (quest.isBoss ? '💀 BOSS TELAH DIKALAHKAN' : '🏆 QUEST SELESAI')
+                      : (quest.isBoss ? '💥 SERANG BOSS (-10% HP)' : '⚔️ KERJAKAN QUEST (+20%)'),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final barColor = quest.isBoss ? AppColors.red : AppColors.accent;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 9),
-      padding: const EdgeInsets.all(13),
-      decoration: BoxDecoration(
-        color: AppColors.c1,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border, width: 0.5),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(quest.title,
-                    style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.t1)),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: (quest.isBoss ? AppColors.red : AppColors.xp)
-                      .withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(8),
+    return GestureDetector(
+      onTap: () => _showQuestActionSheet(context),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 9),
+        padding: const EdgeInsets.all(13),
+        decoration: BoxDecoration(
+          color: AppColors.c1,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.border, width: 0.5),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(quest.title,
+                      style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.t1)),
                 ),
-                child: Text('+${quest.xpReward} XP',
-                    style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: quest.isBoss ? AppColors.red : AppColors.xp)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(99),
-            child: LinearProgressIndicator(
-              value: quest.progress / 100,
-              minHeight: 4,
-              backgroundColor: Colors.white.withOpacity(0.07),
-              valueColor: AlwaysStoppedAnimation<Color>(barColor),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: (quest.isBoss ? AppColors.red : AppColors.xp)
+                        .withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text('+${quest.xpReward} XP',
+                      style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: quest.isBoss ? AppColors.red : AppColors.xp)),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 5),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('${quest.progress}% selesai',
-                  style: const TextStyle(fontSize: 10, color: AppColors.t3)),
-              Text(quest.timeLeft,
-                  style: const TextStyle(fontSize: 10, color: AppColors.t3)),
-            ],
-          ),
-        ],
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(99),
+              child: LinearProgressIndicator(
+                value: quest.progress / 100,
+                minHeight: 4,
+                backgroundColor: Colors.white.withValues(alpha: 0.07),
+                valueColor: AlwaysStoppedAnimation<Color>(barColor),
+              ),
+            ),
+            const SizedBox(height: 5),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  quest.isBoss ? '${quest.progress}% HP' : '${quest.progress}% selesai',
+                  style: TextStyle(fontSize: 10, color: AppColors.t3),
+                ),
+                Text(quest.timeLeft,
+                    style: TextStyle(fontSize: 10, color: AppColors.t3)),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

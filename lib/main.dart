@@ -9,7 +9,7 @@ import 'models/app_state.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -35,11 +35,15 @@ class HeroQuestApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'HeroQuest',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.theme,
-      home: const AuthWrapper(),
+    return Consumer<AppState>(
+      builder: (context, state, _) {
+        return MaterialApp(
+          title: 'HeroQuest',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.getTheme(state.isDarkMode),
+          home: const AuthWrapper(),
+        );
+      },
     );
   }
 }

@@ -34,10 +34,10 @@ class _MainShellState extends State<MainShell> {
       decoration: BoxDecoration(
         color: const Color(0xEE09090E), // sleek translucent dark
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.accent2.withOpacity(0.8), width: 1),
+        border: Border.all(color: AppColors.accent2.withValues(alpha: 0.8), width: 1),
         boxShadow: [
           BoxShadow(
-            color: AppColors.accent2.withOpacity(0.25),
+            color: AppColors.accent2.withValues(alpha: 0.25),
             blurRadius: 12,
             spreadRadius: 1,
             offset: const Offset(0, 4),
@@ -49,10 +49,10 @@ class _MainShellState extends State<MainShell> {
           Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: AppColors.accent2.withOpacity(0.15),
+              color: AppColors.accent2.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.bolt_rounded,
               color: AppColors.accent2,
               size: 16,
@@ -62,7 +62,7 @@ class _MainShellState extends State<MainShell> {
           Expanded(
             child: Text(
               message,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.t1,
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
@@ -100,7 +100,7 @@ class _MainShellState extends State<MainShell> {
           ),
           bottomNavigationBar: Container(
             decoration: BoxDecoration(
-              color: const Color(0xF50D0D1A),
+              color: Color(0xF50D0D1A),
               border: Border(
                 top: BorderSide(color: AppColors.border, width: 0.5),
               ),

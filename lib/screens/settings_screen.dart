@@ -14,6 +14,10 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final _nameCtrl = TextEditingController();
+  final _usernameCtrl = TextEditingController();
+  final _fullNameCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
   bool _isMusicOn = true;
   bool _isSfxOn = true;
   bool _isDarkMode = true;
@@ -27,17 +31,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final state = Provider.of<AppState>(context, listen: false);
     _nameCtrl.text = state.hero.name;
     _selectedAvatar = state.hero.classEmoji;
+    _usernameCtrl.text = state.username;
+    _fullNameCtrl.text = state.fullName;
+    _phoneCtrl.text = state.phone;
+    _emailCtrl.text = FirebaseAuth.instance.currentUser?.email ?? '';
+    _isDarkMode = state.isDarkMode;
+    _isMusicOn = state.isMusicOn;
+    _isSfxOn = state.isSfxOn;
   }
 
   @override
   void dispose() {
     _nameCtrl.dispose();
+    _usernameCtrl.dispose();
+    _fullNameCtrl.dispose();
+    _phoneCtrl.dispose();
+    _emailCtrl.dispose();
     super.dispose();
   }
 
   void _saveProfile(AppState state) {
     if (_nameCtrl.text.trim().isEmpty) return;
     state.updateHeroName(_nameCtrl.text.trim());
+    state.updateUserInfo(
+      newUsername: _usernameCtrl.text.trim(),
+      newFullName: _fullNameCtrl.text.trim(),
+      newPhone: _phoneCtrl.text.trim(),
+    );
     state.addNotification("👤 Profile Updated Successfully!");
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -54,12 +74,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.c2,
-        title: const Text('Keluar Akun?', style: TextStyle(fontFamily: 'Cinzel', color: AppColors.t1, fontSize: 16)),
-        content: const Text('Apakah Anda yakin ingin keluar dari petualangan Anda?', style: TextStyle(color: AppColors.t2, fontSize: 12)),
+        title: Text('Keluar Akun?', style: TextStyle(fontFamily: 'Cinzel', color: AppColors.t1, fontSize: 16)),
+        content: Text('Apakah Anda yakin ingin keluar dari petualangan Anda?', style: TextStyle(color: AppColors.t2, fontSize: 12)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Batal', style: TextStyle(color: AppColors.t3)),
+            child: Text('Batal', style: TextStyle(color: AppColors.t3)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.red),
@@ -90,7 +110,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: Colors.transparent,
         title: const Text('SETTINGS'),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppColors.t2),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppColors.t2),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -112,7 +132,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Avatar Selection Row
-                const Text(
+                Text(
                   'Pilih Avatar / Simbol:',
                   style: TextStyle(fontSize: 10, color: AppColors.t3, fontWeight: FontWeight.w700),
                 ),
@@ -137,7 +157,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: isSelected ? AppColors.accent.withOpacity(0.2) : AppColors.c3,
+                            color: isSelected ? AppColors.accent.withValues(alpha: 0.2) : AppColors.c3,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               color: isSelected ? AppColors.accent : AppColors.border,
@@ -153,18 +173,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 20),
 
                 // Name Input
-                const Text(
+                Text(
                   'Nama Hero:',
                   style: TextStyle(fontSize: 10, color: AppColors.t3, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 8),
                 TextField(
                   controller: _nameCtrl,
-                  style: const TextStyle(fontSize: 13, color: AppColors.t1),
+                  style: TextStyle(fontSize: 13, color: AppColors.t1),
                   decoration: InputDecoration(
                     hintText: 'Nama Hero kamu',
-                    hintStyle: const TextStyle(color: AppColors.t3),
-                    prefixIcon: const Icon(Icons.person_outline_rounded, color: AppColors.t3, size: 18),
+                    hintStyle: TextStyle(color: AppColors.t3),
+                    prefixIcon: Icon(Icons.person_outline_rounded, color: AppColors.t3, size: 18),
                     filled: true,
                     fillColor: AppColors.c1,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -174,11 +194,144 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppColors.accent, width: 1),
+                      borderSide: BorderSide(color: AppColors.accent, width: 1),
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
+
+                // Divider
+                Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Divider(color: AppColors.border, thickness: 0.5),
+                ),
+
+                // Account Information Section
+                Text(
+                  'INFORMASI PENGGUNA',
+                  style: TextStyle(
+                    fontFamily: 'Cinzel',
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.gold2,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                // Username input
+                Text(
+                  'Username:',
+                  style: TextStyle(fontSize: 10, color: AppColors.t3, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _usernameCtrl,
+                  style: TextStyle(fontSize: 13, color: AppColors.t1),
+                  decoration: InputDecoration(
+                    hintText: 'Username kamu',
+                    hintStyle: TextStyle(color: AppColors.t3),
+                    prefixIcon: Icon(Icons.alternate_email_rounded, color: AppColors.t3, size: 18),
+                    filled: true,
+                    fillColor: AppColors.c1,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppColors.border, width: 0.5),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppColors.accent, width: 1),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Nama Lengkap input
+                Text(
+                  'Nama Lengkap:',
+                  style: TextStyle(fontSize: 10, color: AppColors.t3, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _fullNameCtrl,
+                  style: TextStyle(fontSize: 13, color: AppColors.t1),
+                  decoration: InputDecoration(
+                    hintText: 'Nama Lengkap kamu',
+                    hintStyle: TextStyle(color: AppColors.t3),
+                    prefixIcon: Icon(Icons.badge_outlined, color: AppColors.t3, size: 18),
+                    filled: true,
+                    fillColor: AppColors.c1,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppColors.border, width: 0.5),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppColors.accent, width: 1),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Nomor Telepon input
+                Text(
+                  'Nomor Telepon:',
+                  style: TextStyle(fontSize: 10, color: AppColors.t3, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _phoneCtrl,
+                  keyboardType: TextInputType.phone,
+                  style: TextStyle(fontSize: 13, color: AppColors.t1),
+                  decoration: InputDecoration(
+                    hintText: 'Nomor Telepon kamu',
+                    hintStyle: TextStyle(color: AppColors.t3),
+                    prefixIcon: Icon(Icons.phone_android_rounded, color: AppColors.t3, size: 18),
+                    filled: true,
+                    fillColor: AppColors.c1,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppColors.border, width: 0.5),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppColors.accent, width: 1),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Email input (read-only)
+                Text(
+                  'Email (Tidak dapat diubah):',
+                  style: TextStyle(fontSize: 10, color: AppColors.t3, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _emailCtrl,
+                  readOnly: true,
+                  style: TextStyle(fontSize: 13, color: AppColors.t2),
+                  decoration: InputDecoration(
+                    hintText: 'Email kamu',
+                    hintStyle: TextStyle(color: AppColors.t3),
+                    prefixIcon: Icon(Icons.lock_outline_rounded, color: AppColors.t3, size: 18),
+                    filled: true,
+                    fillColor: AppColors.c0.withValues(alpha: 0.4),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppColors.border.withValues(alpha: 0.3), width: 0.5),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppColors.border.withValues(alpha: 0.3), width: 0.5),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
 
                 // Save Profile Button
                 SizedBox(
@@ -216,10 +369,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   subtitle: 'Tampilan cyberpunk gelap neon.',
                   value: _isDarkMode,
                   onChanged: (val) {
+                    state.setDarkMode(val);
                     setState(() {
                       _isDarkMode = val;
                     });
-                    state.addNotification("🌌 Dark Mode forced for futuristic style");
+                    state.addNotification(val ? "🌌 Dark Mode Enabled" : "☀️ Light Mode Enabled");
                   },
                 ),
               ],
@@ -243,18 +397,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   subtitle: 'Mainkan musik atmosfir RPG.',
                   value: _isMusicOn,
                   onChanged: (val) {
+                    state.setMusicOn(val);
                     setState(() {
                       _isMusicOn = val;
                     });
                     state.addNotification(val ? "🎵 Music Track Enabled" : "🔇 Music Track Muted");
                   },
                 ),
-                const Divider(height: 1, color: AppColors.border),
+                Divider(height: 1, color: AppColors.border),
                 _settingSwitch(
                   title: 'Sound Effects (SFX)',
                   subtitle: 'Suara notifikasi dan level up.',
                   value: _isSfxOn,
                   onChanged: (val) {
+                    state.setSfxOn(val);
                     setState(() {
                       _isSfxOn = val;
                     });
@@ -270,12 +426,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           // ── Logout Action ──────────────────────────────────────────
           OutlinedButton.icon(
             onPressed: _logout,
-            icon: const Icon(Icons.logout_rounded, size: 16, color: AppColors.red),
+            icon: Icon(Icons.logout_rounded, size: 16, color: AppColors.red),
             label: const Text('Keluar dari HeroQuest', style: TextStyle(fontWeight: FontWeight.w700)),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.red,
-              side: const BorderSide(color: AppColors.red, width: 0.5),
-              backgroundColor: AppColors.red.withOpacity(0.05),
+              side: BorderSide(color: AppColors.red, width: 0.5),
+              backgroundColor: AppColors.red.withValues(alpha: 0.05),
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),
@@ -292,7 +448,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       padding: const EdgeInsets.only(left: 4, bottom: 8),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontFamily: 'Cinzel',
           fontSize: 10,
           fontWeight: FontWeight.w800,
@@ -318,16 +474,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.t1)),
+                Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.t1)),
                 const SizedBox(height: 2),
-                Text(subtitle, style: const TextStyle(fontSize: 10, color: AppColors.t3)),
+                Text(subtitle, style: TextStyle(fontSize: 10, color: AppColors.t3)),
               ],
             ),
           ),
           Switch(
             value: value,
-            activeColor: AppColors.accent,
-            activeTrackColor: AppColors.accent.withOpacity(0.3),
+            activeThumbColor: AppColors.accent,
+            activeTrackColor: AppColors.accent.withValues(alpha: 0.3),
             inactiveThumbColor: AppColors.t3,
             inactiveTrackColor: AppColors.c1,
             onChanged: onChanged,

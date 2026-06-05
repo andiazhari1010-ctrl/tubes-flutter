@@ -42,7 +42,7 @@ class HeroScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: AppColors.border, width: 0.5),
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Icon(Icons.settings_outlined,
                         color: AppColors.t2, size: 18),
                   ),
@@ -67,7 +67,7 @@ class HeroScreen extends StatelessWidget {
                         style: const TextStyle(fontSize: 60)),
                     const SizedBox(height: 10),
                     Text(hero.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Cinzel',
                           fontSize: 17,
                           color: AppColors.t1,
@@ -75,7 +75,7 @@ class HeroScreen extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       'Level ${hero.level} · ${hero.className} · ${hero.xp}/${hero.maxXp} XP',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 11, color: AppColors.accent2),
                     ),
                     const SizedBox(height: 16),
@@ -109,18 +109,18 @@ class HeroScreen extends StatelessWidget {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        AppColors.accent.withOpacity(0.15),
-                        AppColors.accent2.withOpacity(0.05),
+                        AppColors.accent.withValues(alpha: 0.15),
+                        AppColors.accent2.withValues(alpha: 0.05),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: AppColors.accent.withOpacity(0.4),
+                      color: AppColors.accent.withValues(alpha: 0.4),
                       width: 1,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.accent.withOpacity(0.1),
+                        color: AppColors.accent.withValues(alpha: 0.1),
                         blurRadius: 10,
                         spreadRadius: 1,
                       ),
@@ -128,12 +128,12 @@ class HeroScreen extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.bar_chart_rounded, color: AppColors.accent, size: 20),
-                      const SizedBox(width: 12),
+                      Icon(Icons.bar_chart_rounded, color: AppColors.accent, size: 20),
+                      SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
+                          children: [
                             Text(
                               'STATISTICS DASHBOARD',
                               style: TextStyle(
@@ -152,7 +152,7 @@ class HeroScreen extends StatelessWidget {
                           ],
                         ),
                       ),
-                      const Icon(Icons.arrow_forward_ios_rounded, color: AppColors.t3, size: 12),
+                      Icon(Icons.arrow_forward_ios_rounded, color: AppColors.t3, size: 12),
                     ],
                   ),
                 ),
@@ -189,7 +189,7 @@ class HeroScreen extends StatelessWidget {
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         color: sel
-                            ? AppColors.accent.withOpacity(0.09)
+                            ? AppColors.accent.withValues(alpha: 0.09)
                             : AppColors.c1,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
@@ -204,7 +204,7 @@ class HeroScreen extends StatelessWidget {
                               style: const TextStyle(fontSize: 28)),
                           const SizedBox(height: 6),
                           Text(name,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: 'Cinzel',
                                 fontSize: 12,
                                 color: AppColors.t1,
@@ -212,7 +212,7 @@ class HeroScreen extends StatelessWidget {
                           const SizedBox(height: 3),
                           Text(desc,
                               textAlign: TextAlign.center,
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontSize: 10, color: AppColors.t3),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis),
@@ -245,13 +245,13 @@ class HeroScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(item.name,
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w500,
                                     color: AppColors.t1)),
                             const SizedBox(height: 2),
                             Text(item.description,
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontSize: 10, color: AppColors.t3)),
                           ],
                         ),
@@ -293,12 +293,12 @@ class HeroScreen extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: item.owned
                                 ? AppColors.c2
-                                : AppColors.gold.withOpacity(0.13),
+                                : AppColors.gold.withValues(alpha: 0.13),
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
                               color: item.owned
                                   ? AppColors.border
-                                  : AppColors.gold.withOpacity(0.35),
+                                  : AppColors.gold.withValues(alpha: 0.35),
                               width: 0.5,
                             ),
                           ),
@@ -338,7 +338,7 @@ class HeroScreen extends StatelessWidget {
                 fontWeight: FontWeight.w700,
                 color: valueColor)),
         Text(label.toUpperCase(),
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: 9, color: AppColors.t3, letterSpacing: 0.5)),
       ],
     );

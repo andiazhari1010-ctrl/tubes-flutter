@@ -25,9 +25,9 @@ class ShopScreen extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.gold.withOpacity(0.15),
+                      color: AppColors.gold.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.gold.withOpacity(0.3), width: 0.5),
+                      border: Border.all(color: AppColors.gold.withValues(alpha: 0.3), width: 0.5),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -36,7 +36,7 @@ class ShopScreen extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(
                           '$gold',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                             color: AppColors.gold,
@@ -98,7 +98,7 @@ class _ShopItemTile extends StatelessWidget {
         color: AppColors.c2,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: item.owned ? AppColors.accent.withOpacity(0.3) : AppColors.border,
+          color: item.owned ? AppColors.accent.withValues(alpha: 0.3) : AppColors.border,
           width: 1,
         ),
       ),
@@ -123,7 +123,7 @@ class _ShopItemTile extends StatelessWidget {
               children: [
                 Text(
                   item.name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: AppColors.t1,
@@ -132,7 +132,7 @@ class _ShopItemTile extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   item.description,
-                  style: const TextStyle(fontSize: 12, color: AppColors.t2),
+                  style: TextStyle(fontSize: 12, color: AppColors.t2),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -153,10 +153,10 @@ class _ShopItemTile extends StatelessWidget {
               ? Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: AppColors.accent.withOpacity(0.1),
+                    color: AppColors.accent.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Text(
+                  child: Text(
                     'OWNED',
                     style: TextStyle(
                       fontSize: 11,

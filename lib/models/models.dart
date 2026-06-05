@@ -302,6 +302,7 @@ class QuestModel {
 }
 
 class PartyMember {
+  final String uid;
   final String name;
   final String emoji;
   final HeroClass heroClass;
@@ -311,6 +312,7 @@ class PartyMember {
   final Color avatarColor;
 
   const PartyMember({
+    required this.uid,
     required this.name,
     required this.emoji,
     required this.heroClass,
@@ -364,5 +366,50 @@ class ShopItem {
       case ItemRarity.epic: return const Color(0xFF7F77DD);
       case ItemRarity.legendary: return const Color(0xFFF4C430);
     }
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'description': description,
+      'emoji': emoji,
+      'price': price,
+      'category': category.name,
+      'rarity': rarity.name,
+      'bonuses': bonuses,
+      'owned': owned,
+      'isEquipped': isEquipped,
+    };
+  }
+
+  factory ShopItem.fromMap(Map<String, dynamic> map, String docId) {
+    ItemCategory catVal = ItemCategory.potion;
+    try {
+      catVal = ItemCategory.values.firstWhere((e) => e.name == map['category']);
+    } catch (_) {}
+
+    ItemRarity rarVal = ItemRarity.common;
+    try {
+      rarVal = ItemRarity.values.firstWhere((e) => e.name == map['rarity']);
+    } catch (_) {}
+
+    final bonusesMap = Map<String, dynamic>.from(map['bonuses'] ?? {});
+    final Map<String, int> bonusesInt = {};
+    bonusesMap.forEach((key, val) {
+      bonusesInt[key] = (val as num).toInt();
+    });
+
+    return ShopItem(
+      id: docId,
+      name: map['name'] ?? '',
+      description: map['description'] ?? '',
+      emoji: map['emoji'] ?? '🛡️',
+      price: (map['price'] ?? 0) as int,
+      category: catVal,
+      rarity: rarVal,
+      bonuses: bonusesInt,
+      owned: map['owned'] ?? false,
+      isEquipped: map['isEquipped'] ?? false,
+    );
   }
 }

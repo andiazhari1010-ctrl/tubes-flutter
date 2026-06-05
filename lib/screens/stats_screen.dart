@@ -14,11 +14,11 @@ class StatsScreen extends StatelessWidget {
         
         // Heatmap colors based on intensity
         final intensityColors = [
-          Colors.white.withOpacity(0.04), // 0 tasks
-          AppColors.accent.withOpacity(0.2), // 1-2 tasks
-          AppColors.accent.withOpacity(0.4), // 3-4 tasks
-          AppColors.accent.withOpacity(0.7), // 5-6 tasks
-          AppColors.gold.withOpacity(0.8),    // 7+ tasks
+          Colors.white.withValues(alpha: 0.04), // 0 tasks
+          AppColors.accent.withValues(alpha: 0.2), // 1-2 tasks
+          AppColors.accent.withValues(alpha: 0.4), // 3-4 tasks
+          AppColors.accent.withValues(alpha: 0.7), // 5-6 tasks
+          AppColors.gold.withValues(alpha: 0.8),    // 7+ tasks
         ];
 
         // Weekly chart task completions
@@ -38,7 +38,7 @@ class StatsScreen extends StatelessWidget {
             backgroundColor: Colors.transparent,
             title: const Text('STATISTICS'),
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppColors.t2),
+              icon: Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppColors.t2),
               onPressed: () => Navigator.pop(context),
             ),
           ),
@@ -76,7 +76,7 @@ class StatsScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'PROGRES MINGGUAN',
                       style: TextStyle(
                         fontFamily: 'Cinzel',
@@ -94,7 +94,7 @@ class StatsScreen extends StatelessWidget {
                         final (day, count, ratio) = d;
                         return Column(
                           children: [
-                            Text('$count', style: const TextStyle(fontSize: 9, color: AppColors.t2)),
+                            Text('$count', style: TextStyle(fontSize: 9, color: AppColors.t2)),
                             const SizedBox(height: 6),
                             Container(
                               width: 14,
@@ -104,7 +104,7 @@ class StatsScreen extends StatelessWidget {
                                   begin: Alignment.bottomCenter,
                                   end: Alignment.topCenter,
                                   colors: [
-                                    AppColors.accent.withOpacity(0.5),
+                                    AppColors.accent.withValues(alpha: 0.5),
                                     AppColors.accent,
                                   ],
                                 ),
@@ -112,7 +112,7 @@ class StatsScreen extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 8),
-                            Text(day, style: const TextStyle(fontSize: 10, color: AppColors.t3, fontWeight: FontWeight.w600)),
+                            Text(day, style: TextStyle(fontSize: 10, color: AppColors.t3, fontWeight: FontWeight.w600)),
                           ],
                         );
                       }).toList(),
@@ -134,7 +134,7 @@ class StatsScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'HEATMAP AKTIVITAS (5 MINGGU TERAKHIR)',
                       style: TextStyle(
                         fontFamily: 'Cinzel',
@@ -164,7 +164,7 @@ class StatsScreen extends StatelessWidget {
                                 color: cellColor,
                                 borderRadius: BorderRadius.circular(6),
                                 border: Border.all(
-                                  color: Colors.white.withOpacity(0.02),
+                                  color: Colors.white.withValues(alpha: 0.02),
                                   width: 0.5,
                                 ),
                               ),
@@ -179,7 +179,7 @@ class StatsScreen extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        const Text('Kurang ', style: TextStyle(fontSize: 9, color: AppColors.t3)),
+                        Text('Kurang ', style: TextStyle(fontSize: 9, color: AppColors.t3)),
                         ...intensityColors.map((color) => Container(
                           margin: const EdgeInsets.symmetric(horizontal: 2),
                           width: 8,
@@ -189,7 +189,7 @@ class StatsScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(2),
                           ),
                         )),
-                        const Text(' Banyak', style: TextStyle(fontSize: 9, color: AppColors.t3)),
+                        Text(' Banyak', style: TextStyle(fontSize: 9, color: AppColors.t3)),
                       ],
                     ),
                   ],
@@ -210,7 +210,7 @@ class StatsScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'ATRIBUT SKILL RPG',
                       style: TextStyle(
                         fontFamily: 'Cinzel',
@@ -253,7 +253,7 @@ class StatsScreen extends StatelessWidget {
               children: [
                 Text(
                   label.toUpperCase(),
-                  style: const TextStyle(fontSize: 9, color: AppColors.t3, fontWeight: FontWeight.w700, letterSpacing: 0.5),
+                  style: TextStyle(fontSize: 9, color: AppColors.t3, fontWeight: FontWeight.w700, letterSpacing: 0.5),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -262,12 +262,12 @@ class StatsScreen extends StatelessWidget {
                 ),
                 Text(
                   sub,
-                  style: const TextStyle(fontSize: 8, color: AppColors.t2, fontWeight: FontWeight.w500),
+                  style: TextStyle(fontSize: 8, color: AppColors.t2, fontWeight: FontWeight.w500),
                 ),
               ],
             ),
           ),
-          Icon(icon, color: color.withOpacity(0.4), size: 24),
+          Icon(icon, color: color.withValues(alpha: 0.4), size: 24),
         ],
       ),
     );
@@ -284,7 +284,7 @@ class StatsScreen extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.t1),
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.t1),
               ),
               Row(
                 children: [
@@ -295,7 +295,7 @@ class StatsScreen extends StatelessWidget {
                   const SizedBox(width: 4),
                   Text(
                     '($desc)',
-                    style: const TextStyle(fontSize: 9, color: AppColors.t3),
+                    style: TextStyle(fontSize: 9, color: AppColors.t3),
                   ),
                 ],
               ),
@@ -308,7 +308,7 @@ class StatsScreen extends StatelessWidget {
               // Progress showing to next level (mocking fraction based on level value)
               value: (value % 10) / 10 + 0.1,
               minHeight: 5,
-              backgroundColor: Colors.white.withOpacity(0.04),
+              backgroundColor: Colors.white.withValues(alpha: 0.04),
               valueColor: AlwaysStoppedAnimation<Color>(color),
             ),
           ),

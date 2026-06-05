@@ -48,7 +48,7 @@ class TasksScreen extends StatelessWidget {
                 ),
               ),
               GestureDetector(
-                onTap: () => _showAddTaskSheet(context, state),
+                onTap: () => _showTaskFormSheet(context, state),
                 child: Container(
                   margin: const EdgeInsets.only(right: 16),
                   width: 34, height: 34,
@@ -57,7 +57,7 @@ class TasksScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: AppColors.border, width: 0.5),
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Text('＋',
                         style: TextStyle(fontSize: 18, color: AppColors.t2)),
                   ),
@@ -75,6 +75,7 @@ class TasksScreen extends StatelessWidget {
                   habit: h,
                   iconBg: _habitColors[i % _habitColors.length],
                   onAction: (positive) => state.doHabit(h, positive),
+                  onLongPress: () => _showOptionsSheet(context, state, habit: h),
                 );
               }),
 
@@ -82,12 +83,14 @@ class TasksScreen extends StatelessWidget {
               ...state.dailyTasks.map((t) => TaskItem(
                     task: t,
                     onTap: () => state.toggleTask(t),
+                    onLongPress: () => _showOptionsSheet(context, state, task: t),
                   )),
 
               const SectionTitle('To-Do List'),
               ...state.todos.map((t) => TaskItem(
                     task: t,
                     onTap: () => state.toggleTask(t),
+                    onLongPress: () => _showOptionsSheet(context, state, task: t),
                   )),
 
               const SizedBox(height: 16),
@@ -98,12 +101,152 @@ class TasksScreen extends StatelessWidget {
     );
   }
 
-  void _showAddTaskSheet(BuildContext context, AppState state) {
-    final titleCtrl = TextEditingController();
-    final subCtrl = TextEditingController();
-    TaskPriority priority = TaskPriority.medium;
-    TaskType type = TaskType.todo;
-    SkillAttribute attribute = SkillAttribute.focus;
+  DateTime? _parseDeadline(String subtitle) {
+    final match = RegExp(r'Tenggat: (\d{2})-(\d{2})-(\d{4})').firstMatch(subtitle);
+    if (match != null) {
+      final day = int.parse(match.group(1)!);
+      final month = int.parse(match.group(2)!);
+      final year = int.parse(match.group(3)!);
+      return DateTime(year, month, day);
+    }
+    return null;
+  }
+
+  String _parseDescription(String subtitle) {
+    final idx = subtitle.indexOf(' · Tenggat:');
+    if (idx != -1) {
+      return subtitle.substring(0, idx);
+    }
+    if (subtitle.startsWith('Tenggat: ')) {
+      return '';
+    }
+    return subtitle;
+  }
+
+  void _showOptionsSheet(
+    BuildContext context,
+    AppState state, {
+    TaskModel? task,
+    HabitModel? habit,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.c2,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
+                child: Container(
+                  width: 36, height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.t3,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+              ),
+              Text(
+                task != null ? 'Kelola Task' : 'Kelola Habit',
+                style: TextStyle(
+                  fontFamily: 'Cinzel',
+                  fontSize: 16,
+                  color: AppColors.t1,
+                ),
+              ),
+              const SizedBox(height: 20),
+              ListTile(
+                leading: Icon(Icons.edit_outlined, color: AppColors.accent),
+                title: Text('Edit', style: TextStyle(color: AppColors.t1)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showTaskFormSheet(context, state, taskToEdit: task, habitToEdit: habit);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.delete_outline, color: AppColors.red),
+                title: Text('Hapus', style: TextStyle(color: AppColors.red)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showDeleteConfirmation(context, state, task: task, habit: habit);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showDeleteConfirmation(
+    BuildContext context,
+    AppState state, {
+    TaskModel? task,
+    HabitModel? habit,
+  }) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          backgroundColor: AppColors.c2,
+          title: Text(
+            'Konfirmasi Hapus',
+            style: TextStyle(fontFamily: 'Cinzel', color: AppColors.t1, fontSize: 16),
+          ),
+          content: Text(
+            'Apakah Anda yakin ingin menghapus ${task != null ? "task" : "habit"} ini?',
+            style: TextStyle(color: AppColors.t2, fontSize: 13),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('Batal', style: TextStyle(color: AppColors.t3)),
+            ),
+            TextButton(
+              onPressed: () {
+                if (task != null) {
+                  state.deleteTask(task.id);
+                } else if (habit != null) {
+                  state.deleteHabit(habit.id);
+                }
+                Navigator.pop(ctx);
+              },
+              child: Text('Hapus', style: TextStyle(color: AppColors.red)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showTaskFormSheet(
+    BuildContext context,
+    AppState state, {
+    TaskModel? taskToEdit,
+    HabitModel? habitToEdit,
+  }) {
+    final titleCtrl = TextEditingController(
+      text: taskToEdit?.title ?? habitToEdit?.title ?? '',
+    );
+    final descCtrl = TextEditingController();
+    DateTime? selectedDate;
+
+    if (taskToEdit != null) {
+      descCtrl.text = _parseDescription(taskToEdit.subtitle);
+      selectedDate = _parseDeadline(taskToEdit.subtitle);
+    }
+
+    TaskPriority priority = taskToEdit?.priority ?? TaskPriority.medium;
+    TaskType type = taskToEdit != null
+        ? taskToEdit.type
+        : (habitToEdit != null ? TaskType.habit : TaskType.todo);
+    SkillAttribute attribute =
+        taskToEdit?.attribute ?? habitToEdit?.attribute ?? SkillAttribute.focus;
 
     showModalBottomSheet(
       context: context,
@@ -114,6 +257,9 @@ class TasksScreen extends StatelessWidget {
       ),
       builder: (ctx) {
         return StatefulBuilder(builder: (ctx, setLocal) {
+          final isEditing = taskToEdit != null || habitToEdit != null;
+          final isHabit = type == TaskType.habit;
+
           return Padding(
             padding: EdgeInsets.only(
               left: 20, right: 20, top: 20,
@@ -134,61 +280,152 @@ class TasksScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text('Tambah Task Baru',
-                      style: TextStyle(
-                        fontFamily: 'Cinzel',
-                        fontSize: 16,
-                        color: AppColors.t1,
-                      )),
-                  const SizedBox(height: 16),
-                  _sheetInput(titleCtrl, 'Judul task', Icons.title),
-                  const SizedBox(height: 10),
-                  _sheetInput(subCtrl, 'Subtitle / deadline', Icons.info_outline),
-                  const SizedBox(height: 16),
-
-                  // Type selector
-                  const Text('Tipe',
-                      style: TextStyle(fontSize: 12, color: AppColors.t3)),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: TaskType.values.map((t) {
-                      final labels = {
-                        TaskType.habit: '🌀 Habit',
-                        TaskType.daily: '📅 Daily',
-                        TaskType.todo: '📝 To-Do'
-                      };
-                      final sel = type == t;
-                      return Expanded(
-                        child: GestureDetector(
-                          onTap: () => setLocal(() => type = t),
-                          child: Container(
-                            margin: const EdgeInsets.only(right: 8),
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            decoration: BoxDecoration(
-                              color: sel
-                                  ? AppColors.accent.withOpacity(0.15)
-                                  : AppColors.c1,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: sel ? AppColors.accent : AppColors.border,
-                                width: sel ? 1 : 0.5,
-                              ),
-                            ),
-                            child: Text(labels[t]!,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w500,
-                                    color: sel ? AppColors.accent2 : AppColors.t3)),
-                          ),
-                        ),
-                      );
-                    }).toList(),
+                  Text(
+                    isEditing
+                        ? (habitToEdit != null ? 'Edit Habit' : 'Edit Task')
+                        : 'Tambah Task Baru',
+                    style: TextStyle(
+                      fontFamily: 'Cinzel',
+                      fontSize: 16,
+                      color: AppColors.t1,
+                    ),
                   ),
                   const SizedBox(height: 16),
+                  _sheetInput(titleCtrl, 'Judul task/habit', Icons.title),
+                  const SizedBox(height: 10),
+
+                  if (!isHabit) ...[
+                    _sheetInput(descCtrl, 'Deskripsi / subtitle (Opsional)', Icons.info_outline),
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: AppColors.c1,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.border, width: 0.5),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () async {
+                                DateTime? picked = await showDatePicker(
+                                  context: ctx,
+                                  initialDate: selectedDate ?? DateTime.now(),
+                                  firstDate: DateTime(2020),
+                                  lastDate: DateTime(2100),
+                                  builder: (context, child) {
+                                    return Theme(
+                                      data: Theme.of(context).copyWith(
+                                        colorScheme: ColorScheme.dark(
+                                          primary: AppColors.accent,
+                                          onPrimary: Colors.white,
+                                          surface: AppColors.c2,
+                                          onSurface: AppColors.t1,
+                                        ),
+                                        textButtonTheme: TextButtonThemeData(
+                                          style: TextButton.styleFrom(
+                                            foregroundColor: AppColors.accent,
+                                          ),
+                                        ),
+                                      ),
+                                      child: child!,
+                                    );
+                                  },
+                                );
+                                if (picked != null) {
+                                  setLocal(() {
+                                    selectedDate = picked;
+                                  });
+                                }
+                              },
+                              child: Row(
+                                children: [
+                                  Icon(Icons.calendar_today_outlined, color: AppColors.t3, size: 18),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      selectedDate == null
+                                          ? 'Pilih tanggal deadline (Opsional)'
+                                          : 'Tenggat: ${selectedDate!.day.toString().padLeft(2, '0')}-${selectedDate!.month.toString().padLeft(2, '0')}-${selectedDate!.year}',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: selectedDate == null ? AppColors.t3 : AppColors.t1,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          if (selectedDate != null)
+                            GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () {
+                                setLocal(() {
+                                  selectedDate = null;
+                                });
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.all(4.0),
+                                child: Icon(Icons.clear, color: AppColors.t3, size: 18),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Type selector
+                  if (!isEditing || taskToEdit != null) ...[
+                    Text('Tipe',
+                        style: TextStyle(fontSize: 12, color: AppColors.t3)),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: TaskType.values.where((t) {
+                        if (isEditing && t == TaskType.habit) return false;
+                        return true;
+                      }).map((t) {
+                        final labels = {
+                          TaskType.habit: '🌀 Habit',
+                          TaskType.daily: '📅 Daily',
+                          TaskType.todo: '📝 To-Do'
+                        };
+                        final sel = type == t;
+                        return Expanded(
+                          child: GestureDetector(
+                            onTap: () => setLocal(() => type = t),
+                            child: Container(
+                              margin: const EdgeInsets.only(right: 8),
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              decoration: BoxDecoration(
+                                color: sel
+                                    ? AppColors.accent.withValues(alpha: 0.15)
+                                    : AppColors.c1,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: sel ? AppColors.accent : AppColors.border,
+                                  width: sel ? 1 : 0.5,
+                                ),
+                              ),
+                              child: Text(labels[t]!,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                      color: sel ? AppColors.accent2 : AppColors.t3)),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
 
                   // Attribute selector
-                  const Text('Atribut Skill RPG',
+                  Text('Atribut Skill RPG',
                       style: TextStyle(fontSize: 12, color: AppColors.t3)),
                   const SizedBox(height: 8),
                   Wrap(
@@ -202,7 +439,7 @@ class TasksScreen extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(
                             color: sel
-                                ? AppColors.accent.withOpacity(0.15)
+                                ? AppColors.accent.withValues(alpha: 0.15)
                                 : AppColors.c1,
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
@@ -224,50 +461,91 @@ class TasksScreen extends StatelessWidget {
                   const SizedBox(height: 16),
 
                   // Priority selector
-                  const Text('Prioritas',
-                      style: TextStyle(fontSize: 12, color: AppColors.t3)),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      _priorityChip('High', TaskPriority.high, priority,
-                          (p) => setLocal(() => priority = p)),
-                      const SizedBox(width: 8),
-                      _priorityChip('Medium', TaskPriority.medium, priority,
-                          (p) => setLocal(() => priority = p)),
-                      const SizedBox(width: 8),
-                      _priorityChip('Low', TaskPriority.low, priority,
-                          (p) => setLocal(() => priority = p)),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
+                  if (!isHabit) ...[
+                    Text('Prioritas',
+                        style: TextStyle(fontSize: 12, color: AppColors.t3)),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        _priorityChip('High', TaskPriority.high, priority,
+                            (p) => setLocal(() => priority = p)),
+                        const SizedBox(width: 8),
+                        _priorityChip('Medium', TaskPriority.medium, priority,
+                            (p) => setLocal(() => priority = p)),
+                        const SizedBox(width: 8),
+                        _priorityChip('Low', TaskPriority.low, priority,
+                            (p) => setLocal(() => priority = p)),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                  ],
 
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () {
-                        if (titleCtrl.text.trim().isEmpty) return;
-                        final task = TaskModel(
-                          id: DateTime.now().millisecondsSinceEpoch.toString(),
-                          title: titleCtrl.text.trim(),
-                          subtitle: subCtrl.text.trim().isEmpty
-                              ? '📝 Task baru'
-                              : subCtrl.text.trim(),
-                          priority: priority,
-                          type: type,
-                          attribute: attribute,
-                          xpReward: 30,
-                          goldReward: 10,
-                        );
+                        final title = titleCtrl.text.trim();
+                        if (title.isEmpty) return;
+
                         if (type == TaskType.habit) {
-                          state.addHabit(HabitModel(
-                            id: task.id,
-                            title: task.title,
-                            emoji: '⭐',
-                            xpReward: 15,
-                            attribute: attribute,
-                          ));
+                          if (habitToEdit != null) {
+                            state.updateHabit(HabitModel(
+                              id: habitToEdit.id,
+                              title: title,
+                              emoji: habitToEdit.emoji,
+                              streak: habitToEdit.streak,
+                              xpReward: habitToEdit.xpReward,
+                              attribute: attribute,
+                            ));
+                          } else {
+                            state.addHabit(HabitModel(
+                              id: DateTime.now().millisecondsSinceEpoch.toString(),
+                              title: title,
+                              emoji: '⭐',
+                              xpReward: 15,
+                              attribute: attribute,
+                            ));
+                          }
                         } else {
-                          state.addTask(task);
+                          final desc = descCtrl.text.trim();
+                          final dateStr = selectedDate != null
+                              ? 'Tenggat: ${selectedDate!.day.toString().padLeft(2, '0')}-${selectedDate!.month.toString().padLeft(2, '0')}-${selectedDate!.year}'
+                              : '';
+                          String finalSubtitle = '';
+                          if (desc.isNotEmpty && dateStr.isNotEmpty) {
+                            finalSubtitle = '$desc · $dateStr';
+                          } else if (desc.isNotEmpty) {
+                            finalSubtitle = desc;
+                          } else if (dateStr.isNotEmpty) {
+                            finalSubtitle = dateStr;
+                          } else {
+                            finalSubtitle = '📝 Task baru';
+                          }
+
+                          if (taskToEdit != null) {
+                            state.updateTask(TaskModel(
+                              id: taskToEdit.id,
+                              title: title,
+                              subtitle: finalSubtitle,
+                              isDone: taskToEdit.isDone,
+                              xpReward: taskToEdit.xpReward,
+                              goldReward: taskToEdit.goldReward,
+                              priority: priority,
+                              type: type,
+                              attribute: attribute,
+                            ));
+                          } else {
+                            state.addTask(TaskModel(
+                              id: DateTime.now().millisecondsSinceEpoch.toString(),
+                              title: title,
+                              subtitle: finalSubtitle,
+                              priority: priority,
+                              type: type,
+                              attribute: attribute,
+                              xpReward: 30,
+                              goldReward: 10,
+                            ));
+                          }
                         }
                         Navigator.pop(ctx);
                       },
@@ -279,9 +557,11 @@ class TasksScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(14)),
                         elevation: 0,
                       ),
-                      child: const Text('Tambahkan',
-                          style: TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.w600)),
+                      child: Text(
+                        isEditing ? 'Simpan Perubahan' : 'Tambahkan',
+                        style: const TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w600),
+                      ),
                     ),
                   ),
                 ],
@@ -297,10 +577,10 @@ class TasksScreen extends StatelessWidget {
       TextEditingController ctrl, String hint, IconData icon) {
     return TextField(
       controller: ctrl,
-      style: const TextStyle(fontSize: 13, color: AppColors.t1),
+      style: TextStyle(fontSize: 13, color: AppColors.t1),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(color: AppColors.t3),
+        hintStyle: TextStyle(color: AppColors.t3),
         prefixIcon: Icon(icon, color: AppColors.t3, size: 18),
         filled: true,
         fillColor: AppColors.c1,
@@ -312,7 +592,7 @@ class TasksScreen extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.accent, width: 1),
+          borderSide: BorderSide(color: AppColors.accent, width: 1),
         ),
       ),
     );
@@ -327,7 +607,7 @@ class TasksScreen extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            color: sel ? AppColors.accent.withOpacity(0.12) : AppColors.c1,
+            color: sel ? AppColors.accent.withValues(alpha: 0.12) : AppColors.c1,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: sel ? AppColors.accent : AppColors.border,
