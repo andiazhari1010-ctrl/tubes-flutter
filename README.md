@@ -157,15 +157,6 @@ lib/
 
 ---
 
-## 👥 Tim Pengembang
-
-> Proyek Tugas Besar – Mata Kuliah Aplikasi Perangkat Bergerak
-
-| Nama | Peran |
-|------|-------|
-| Tubagus Lingga A. P. | Developer |
-
----
 
 ## 📄 Lisensi
 
