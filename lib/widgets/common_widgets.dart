@@ -452,17 +452,15 @@ class QuestCard extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: isDone ? null : () {
+                  onPressed: (isDone || quest.isBoss) ? null : () {
                     Navigator.pop(ctx);
-                    if (quest.isBoss) {
-                      state.attackGlobalBoss(quest.id);
-                    } else {
-                      state.progressQuest(quest.id);
-                    }
+                    state.progressQuest(quest.id);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: isDone ? AppColors.border : (quest.isBoss ? AppColors.red : AppColors.accent),
+                    backgroundColor: isDone ? AppColors.border : (quest.isBoss ? AppColors.border : AppColors.accent),
                     foregroundColor: Colors.white,
+                    disabledBackgroundColor: AppColors.border,
+                    disabledForegroundColor: AppColors.t3,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -471,7 +469,7 @@ class QuestCard extends StatelessWidget {
                   child: Text(
                     isDone 
                       ? (quest.isBoss ? '💀 BOSS TELAH DIKALAHKAN' : '🏆 QUEST SELESAI')
-                      : (quest.isBoss ? '💥 SERANG BOSS (-10% HP)' : '⚔️ KERJAKAN QUEST (+20%)'),
+                      : (quest.isBoss ? '🛡️ SERANG BOSS DI HALAMAN PARTY' : '⚔️ KERJAKAN QUEST (+20%)'),
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                   ),
                 ),

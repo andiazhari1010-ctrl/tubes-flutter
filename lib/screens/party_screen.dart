@@ -117,6 +117,32 @@ class PartyScreen extends StatelessWidget {
                                 AlwaysStoppedAnimation<Color>(AppColors.red),
                           ),
                         ),
+                        if (activeBoss != null) ...[
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                state.attackGlobalBoss(activeBoss.id);
+                              },
+                              icon: const Text('💥', style: TextStyle(fontSize: 14)),
+                              label: const Text(
+                                'SERANG BOSS (-10% HP)',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.red,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
 
                         // Members
                         const SizedBox(height: 14),
