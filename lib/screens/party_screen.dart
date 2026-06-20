@@ -141,14 +141,33 @@ class PartyScreen extends StatelessWidget {
                                     ],
                                   ),
                                   const SizedBox(height: 6),
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(99),
-                                    child: LinearProgressIndicator(
-                                      value: hpVal,
-                                      minHeight: 8,
-                                      backgroundColor: AppColors.red.withValues(alpha: 0.12),
-                                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.red),
-                                    ),
+                                  LayoutBuilder(
+                                    builder: (context, c) {
+                                      return ClipRRect(
+                                        borderRadius: BorderRadius.circular(99),
+                                        child: Stack(
+                                          children: [
+                                            Container(
+                                              height: 9,
+                                              width: c.maxWidth,
+                                              color: AppColors.red.withValues(alpha: 0.12),
+                                            ),
+                                            AnimatedContainer(
+                                              duration: const Duration(milliseconds: 400),
+                                              curve: Curves.easeOutCubic,
+                                              height: 9,
+                                              width: c.maxWidth * hpVal,
+                                              decoration: BoxDecoration(
+                                                gradient: LinearGradient(
+                                                  colors: [const Color(0xFFFF7A45), AppColors.red],
+                                                ),
+                                                borderRadius: BorderRadius.circular(99),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
                                   ),
                                   const SizedBox(height: 12),
                                   SizedBox(
@@ -261,13 +280,13 @@ class PartyScreen extends StatelessWidget {
                 String rankLabel;
                 if (rank == 1) {
                   rankColor = AppColors.gold;
-                  rankLabel = '1';
+                  rankLabel = '🥇';
                 } else if (rank == 2) {
                   rankColor = const Color(0xFFB4B2A9);
-                  rankLabel = '2';
+                  rankLabel = '🥈';
                 } else if (rank == 3) {
                   rankColor = const Color(0xFFEF9F27);
-                  rankLabel = '3';
+                  rankLabel = '🥉';
                 } else {
                   rankColor = AppColors.t3;
                   rankLabel = '$rank';
@@ -527,129 +546,206 @@ class PartyScreen extends StatelessWidget {
   }
 
   void _showInviteSheet(BuildContext context, AppState state) {
-    final currentMemberIds = state.partyMemberIds;
-    final availableUsers = state.allUsers.where((u) => !currentMemberIds.contains(u.uid)).toList();
+    final searchCtrl = TextEditingController();
+    String query = '';
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: AppColors.c2,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 36),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.t3,
-                  borderRadius: BorderRadius.circular(99),
-                ),
-              ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) {
+          final currentMemberIds = state.partyMemberIds;
+          final q = query.trim().toLowerCase();
+          final availableUsers = state.allUsers
+              .where((u) => !currentMemberIds.contains(u.uid))
+              .where((u) => q.isEmpty || u.name.toLowerCase().contains(q))
+              .toList();
+
+          return Padding(
+            padding: EdgeInsets.only(
+              left: 20, right: 20, top: 20,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 36,
             ),
-            const SizedBox(height: 16),
-            Text(
-              'Undang Anggota',
-              style: TextStyle(
-                fontFamily: 'Cinzel',
-                fontSize: 16,
-                color: AppColors.gold,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
-            if (availableUsers.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 24),
-                child: Center(
-                  child: Text(
-                    'Tidak ada pengguna lain yang tersedia untuk diundang.',
-                    style: TextStyle(fontSize: 12, color: AppColors.t3),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.t3,
+                      borderRadius: BorderRadius.circular(99),
+                    ),
                   ),
                 ),
-              )
-            else
-              Expanded(
-                child: ListView.builder(
-                  itemCount: availableUsers.length,
-                  itemBuilder: (context, index) {
-                    final u = availableUsers[index];
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: AppColors.c1,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.border, width: 0.5),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 30, height: 30,
-                            decoration: BoxDecoration(
-                              color: u.avatarColor.withValues(alpha: 0.2),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(child: Text(u.emoji, style: const TextStyle(fontSize: 14))),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(u.name, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.t1)),
-                                Text('Lv.${u.level} · ${u.className}', style: TextStyle(fontSize: 9, color: AppColors.t3)),
-                              ],
-                            ),
-                          ),
-                          ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(ctx);
-                              state.inviteUser(u.uid);
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.gold,
-                              foregroundColor: Colors.black,
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              elevation: 0,
-                            ),
-                            child: const Text('Undang', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+                const SizedBox(height: 16),
+                Text(
+                  'Undang Anggota',
+                  style: TextStyle(
+                    fontFamily: 'Cinzel',
+                    fontSize: 16,
+                    color: AppColors.gold,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-          ],
-        ),
+                const SizedBox(height: 12),
+
+                // Search bar by username
+                TextField(
+                  controller: searchCtrl,
+                  onChanged: (val) => setLocal(() => query = val),
+                  style: TextStyle(fontSize: 13, color: AppColors.t1),
+                  decoration: InputDecoration(
+                    hintText: 'Cari username...',
+                    hintStyle: TextStyle(color: AppColors.t3),
+                    prefixIcon: Icon(Icons.search, color: AppColors.t3, size: 18),
+                    suffixIcon: query.isEmpty
+                        ? null
+                        : GestureDetector(
+                            onTap: () => setLocal(() {
+                              searchCtrl.clear();
+                              query = '';
+                            }),
+                            child: Icon(Icons.clear, color: AppColors.t3, size: 18),
+                          ),
+                    filled: true,
+                    fillColor: AppColors.c1,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppColors.border, width: 0.5),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppColors.gold, width: 1),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                if (availableUsers.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: Text(
+                        q.isEmpty
+                            ? 'Tidak ada pengguna lain yang tersedia untuk diundang.'
+                            : 'Username "$query" tidak ditemukan.',
+                        style: TextStyle(fontSize: 12, color: AppColors.t3),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  )
+                else
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.of(ctx).size.height * 0.5,
+                    ),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: availableUsers.length,
+                      itemBuilder: (context, index) {
+                        final u = availableUsers[index];
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: AppColors.c1,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.border, width: 0.5),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 30, height: 30,
+                                decoration: BoxDecoration(
+                                  color: u.avatarColor.withValues(alpha: 0.2),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Center(child: Text(u.emoji, style: const TextStyle(fontSize: 14))),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(u.name, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.t1)),
+                                    Text('Lv.${u.level} · ${u.className}', style: TextStyle(fontSize: 9, color: AppColors.t3)),
+                                  ],
+                                ),
+                              ),
+                              ElevatedButton(
+                                onPressed: () {
+                                  Navigator.pop(ctx);
+                                  state.inviteUser(u.uid);
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.gold,
+                                  foregroundColor: Colors.black,
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  elevation: 0,
+                                ),
+                                child: const Text('Undang', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 
   Widget _sectionTitle(String title) {
     return Padding(
-      padding: const EdgeInsets.only(top: 16, bottom: 10),
+      padding: const EdgeInsets.only(top: 18, bottom: 10),
       child: Row(
         children: [
+          Container(
+            width: 3,
+            height: 13,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [AppColors.accent2, AppColors.accent],
+              ),
+              borderRadius: BorderRadius.circular(99),
+            ),
+          ),
+          const SizedBox(width: 9),
           Text(
             title.toUpperCase(),
             style: TextStyle(
               fontFamily: 'Cinzel',
               fontSize: 11,
-              color: AppColors.t3,
+              fontWeight: FontWeight.w700,
+              color: AppColors.t2,
               letterSpacing: 1.5,
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
           Expanded(
-            child: Container(height: 0.5, color: AppColors.border),
+            child: Container(
+              height: 0.5,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [AppColors.border2, AppColors.border.withValues(alpha: 0)],
+                ),
+              ),
+            ),
           ),
         ],
       ),

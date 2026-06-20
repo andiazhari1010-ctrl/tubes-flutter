@@ -240,25 +240,62 @@ class _LoginScreenState extends State<LoginScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             children: [
-              const SizedBox(height: 60),
-              const Text('🏰', style: TextStyle(fontSize: 56)),
-              const SizedBox(height: 12),
-              Text(
-                'HeroQuest',
-                style: TextStyle(
-                  fontFamily: 'Cinzel',
-                  fontSize: 26,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.t1,
+              const SizedBox(height: 56),
+              // Emblem ber-glow — kesan pertama yang sengaja, bukan emoji polos.
+              Container(
+                width: 92, height: 92,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [AppColors.accent.withValues(alpha: 0.35), AppColors.c2],
+                  ),
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(color: AppColors.accent.withValues(alpha: 0.5), width: 1),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.accent.withValues(alpha: 0.28),
+                      blurRadius: 30,
+                      spreadRadius: -4,
+                    ),
+                  ],
+                ),
+                child: const Center(child: Text('🏰', style: TextStyle(fontSize: 46))),
+              ),
+              const SizedBox(height: 18),
+              // Judul two-tone Cinzel.
+              RichText(
+                text: TextSpan(
+                  style: const TextStyle(
+                    fontFamily: 'Cinzel',
+                    fontSize: 28,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
+                  children: [
+                    TextSpan(text: 'Hero', style: TextStyle(color: AppColors.t1)),
+                    TextSpan(text: 'Quest', style: TextStyle(color: AppColors.gold2)),
+                  ],
                 ),
               ),
-              const SizedBox(height: 6),
-              Text(
-                'Gamified Task Management',
-                style: TextStyle(
-                    fontSize: 13, color: AppColors.t3, letterSpacing: 0.5),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                decoration: BoxDecoration(
+                  color: AppColors.c2,
+                  borderRadius: BorderRadius.circular(99),
+                  border: Border.all(color: AppColors.border, width: 0.5),
+                ),
+                child: Text(
+                  '⚔  GAMIFIED TASK MANAGEMENT',
+                  style: TextStyle(
+                      fontSize: 9.5,
+                      color: AppColors.t2,
+                      letterSpacing: 1.2,
+                      fontWeight: FontWeight.w600),
+                ),
               ),
-              const SizedBox(height: 48),
+              const SizedBox(height: 44),
 
               // Username (hanya untuk register)
               if (!_isLogin) ...[

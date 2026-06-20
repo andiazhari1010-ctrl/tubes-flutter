@@ -63,9 +63,55 @@ class HeroScreen extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    Text(hero.classEmoji,
-                        style: const TextStyle(fontSize: 60)),
-                    const SizedBox(height: 10),
+                    // Avatar emblem + badge level.
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          width: 88, height: 88,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [AppColors.accent.withValues(alpha: 0.3), AppColors.c3],
+                            ),
+                            borderRadius: BorderRadius.circular(26),
+                            border: Border.all(color: AppColors.accent.withValues(alpha: 0.5), width: 1.5),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.accent.withValues(alpha: 0.2),
+                                blurRadius: 22,
+                                spreadRadius: -4,
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Text(hero.classEmoji, style: const TextStyle(fontSize: 44)),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: -8, left: 0, right: 0,
+                          child: Center(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: AppColors.gold,
+                                borderRadius: BorderRadius.circular(8),
+                                boxShadow: [
+                                  BoxShadow(color: AppColors.gold.withValues(alpha: 0.3), blurRadius: 8),
+                                ],
+                              ),
+                              child: Text('LV ${hero.level}',
+                                  style: const TextStyle(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w800,
+                                      color: Color(0xFF2A1A00))),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
                     Text(hero.name,
                         style: TextStyle(
                           fontFamily: 'Cinzel',
@@ -74,11 +120,17 @@ class HeroScreen extends StatelessWidget {
                         )),
                     const SizedBox(height: 4),
                     Text(
-                      'Level ${hero.level} · ${hero.className} · ${hero.xp}/${hero.maxXp} XP',
+                      '${hero.className} · ${hero.xp}/${hero.maxXp} XP',
                       style: TextStyle(
                           fontSize: 11, color: AppColors.accent2),
                     ),
                     const SizedBox(height: 16),
+                    StatBar(
+                        label: 'XP',
+                        value: hero.xp,
+                        maxValue: hero.maxXp,
+                        color: AppColors.xp),
+                    const SizedBox(height: 10),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -146,7 +198,7 @@ class HeroScreen extends StatelessWidget {
                             ),
                             SizedBox(height: 2),
                             Text(
-                              'Lihat progress mingguan, heatmap, & level atribut',
+                              'Lihat ringkasan progress & level atribut',
                               style: TextStyle(fontSize: 9, color: AppColors.t3),
                             ),
                           ],

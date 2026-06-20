@@ -11,26 +11,9 @@ class StatsScreen extends StatelessWidget {
     return Consumer<AppState>(
       builder: (context, state, _) {
         final hero = state.hero;
-        
-        // Heatmap colors based on intensity
-        final intensityColors = [
-          Colors.white.withValues(alpha: 0.04), // 0 tasks
-          AppColors.accent.withValues(alpha: 0.2), // 1-2 tasks
-          AppColors.accent.withValues(alpha: 0.4), // 3-4 tasks
-          AppColors.accent.withValues(alpha: 0.7), // 5-6 tasks
-          AppColors.gold.withValues(alpha: 0.8),    // 7+ tasks
-        ];
 
-        // Weekly chart task completions
-        final weeklyData = [
-          ('Sen', 3, 0.4),
-          ('Sel', 5, 0.7),
-          ('Rab', 2, 0.3),
-          ('Kam', 7, 0.95),
-          ('Jum', (4 + hero.totalTasksCompleted % 4), 0.6),
-          ('Sab', 1, 0.15),
-          ('Min', (2 + hero.streak % 3), 0.3),
-        ];
+        // Intelligence kini mencakup nilai lama Knowledge & Focus.
+        final intelligenceTotal = hero.intelligence + hero.knowledge + hero.focus;
 
         return Scaffold(
           backgroundColor: AppColors.c0,
@@ -65,139 +48,6 @@ class StatsScreen extends StatelessWidget {
 
               const SizedBox(height: 20),
 
-              // ── Weekly Progress Chart ─────────────────────────────────
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.c2,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.border, width: 0.5),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'PROGRES MINGGUAN',
-                      style: TextStyle(
-                        fontFamily: 'Cinzel',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.t1,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: weeklyData.map((d) {
-                        final (day, count, ratio) = d;
-                        return Column(
-                          children: [
-                            Text('$count', style: TextStyle(fontSize: 9, color: AppColors.t2)),
-                            const SizedBox(height: 6),
-                            Container(
-                              width: 14,
-                              height: 80 * ratio,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.bottomCenter,
-                                  end: Alignment.topCenter,
-                                  colors: [
-                                    AppColors.accent.withValues(alpha: 0.5),
-                                    AppColors.accent,
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(day, style: TextStyle(fontSize: 10, color: AppColors.t3, fontWeight: FontWeight.w600)),
-                          ],
-                        );
-                      }).toList(),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // ── Activity Heatmap ──────────────────────────────────────
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.c2,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.border, width: 0.5),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'HEATMAP AKTIVITAS (5 MINGGU TERAKHIR)',
-                      style: TextStyle(
-                        fontFamily: 'Cinzel',
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.t1,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    // Heatmap Grid
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: List.generate(7, (colIndex) {
-                        return Column(
-                          children: List.generate(5, (rowIndex) {
-                            // Seed color intensity deterministically
-                            final seed = (colIndex * 3 + rowIndex * 2 + hero.totalTasksCompleted) % 5;
-                            final cellColor = intensityColors[seed];
-
-                            return Container(
-                              margin: const EdgeInsets.symmetric(vertical: 2.5),
-                              width: 24,
-                              height: 24,
-                              decoration: BoxDecoration(
-                                color: cellColor,
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.02),
-                                  width: 0.5,
-                                ),
-                              ),
-                            );
-                          }),
-                        );
-                      }),
-                    ),
-                    
-                    const SizedBox(height: 12),
-                    // Legend
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Text('Kurang ', style: TextStyle(fontSize: 9, color: AppColors.t3)),
-                        ...intensityColors.map((color) => Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 2),
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: color,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        )),
-                        Text(' Banyak', style: TextStyle(fontSize: 9, color: AppColors.t3)),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
               // ── Skill Attributes Levels ────────────────────────────────
               Container(
                 padding: const EdgeInsets.all(16),
@@ -221,11 +71,9 @@ class StatsScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    _skillRow('🧠 Intelligence', hero.intelligence, 'Coding & Logika', const Color(0xFF85B7EB)),
+                    _skillRow('🧠 Intelligence', intelligenceTotal, 'Belajar, Logika & Fokus', const Color(0xFF85B7EB)),
                     _skillRow('💪 Strength', hero.strength, 'Olahraga & Fisik', const Color(0xFFE24B4A)),
                     _skillRow('🎨 Creativity', hero.creativity, 'Desain & Seni', const Color(0xFFFAC775)),
-                    _skillRow('📚 Knowledge', hero.knowledge, 'Belajar & Teori', const Color(0xFF5DCAA5)),
-                    _skillRow('🎯 Focus', hero.focus, 'Konsentrasi & Disiplin', const Color(0xFF7F77DD)),
                   ],
                 ),
               ),
@@ -238,11 +86,15 @@ class StatsScreen extends StatelessWidget {
 
   Widget _statCard(String label, String value, String sub, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
-        color: AppColors.c1,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.c1, color.withValues(alpha: 0.06)],
+        ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border, width: 0.5),
+        border: Border.all(color: color.withValues(alpha: 0.18), width: 0.6),
       ),
       child: Row(
         children: [
@@ -255,19 +107,28 @@ class StatsScreen extends StatelessWidget {
                   label.toUpperCase(),
                   style: TextStyle(fontSize: 9, color: AppColors.t3, fontWeight: FontWeight.w700, letterSpacing: 0.5),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 3),
                 Text(
                   value,
-                  style: TextStyle(fontSize: 18, color: color, fontWeight: FontWeight.w800, fontFamily: 'Cinzel'),
+                  style: TextStyle(fontSize: 19, color: color, fontWeight: FontWeight.w800, fontFamily: 'Cinzel'),
                 ),
+                const SizedBox(height: 1),
                 Text(
                   sub,
-                  style: TextStyle(fontSize: 8, color: AppColors.t2, fontWeight: FontWeight.w500),
+                  style: TextStyle(fontSize: 8, color: AppColors.t2, fontWeight: FontWeight.w500, letterSpacing: 0.3),
                 ),
               ],
             ),
           ),
-          Icon(icon, color: color.withValues(alpha: 0.4), size: 24),
+          Container(
+            width: 36, height: 36,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(11),
+              border: Border.all(color: color.withValues(alpha: 0.22), width: 0.5),
+            ),
+            child: Icon(icon, color: color, size: 19),
+          ),
         ],
       ),
     );
@@ -302,15 +163,35 @@ class StatsScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 6),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(99),
-            child: LinearProgressIndicator(
-              // Progress showing to next level (mocking fraction based on level value)
-              value: (value % 10) / 10 + 0.1,
-              minHeight: 5,
-              backgroundColor: Colors.white.withValues(alpha: 0.04),
-              valueColor: AlwaysStoppedAnimation<Color>(color),
-            ),
+          // Progres menuju "level" atribut berikutnya (tiap 10 poin = 1 tingkat).
+          LayoutBuilder(
+            builder: (context, c) {
+              final frac = ((value % 10) / 10).clamp(0.08, 1.0);
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(99),
+                child: Stack(
+                  children: [
+                    Container(
+                      height: 6,
+                      width: c.maxWidth,
+                      color: Colors.white.withValues(alpha: 0.05),
+                    ),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 320),
+                      curve: Curves.easeOutCubic,
+                      height: 6,
+                      width: c.maxWidth * frac,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [color.withValues(alpha: 0.5), color],
+                        ),
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
         ],
       ),

@@ -69,29 +69,39 @@ class TasksScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             children: [
               const SectionTitle('Habits'),
-              ...List.generate(state.habits.length, (i) {
-                final h = state.habits[i];
-                return HabitItem(
-                  habit: h,
-                  iconBg: _habitColors[i % _habitColors.length],
-                  onAction: (positive) => state.doHabit(h, positive),
-                  onLongPress: () => _showOptionsSheet(context, state, habit: h),
-                );
-              }),
+              if (state.habits.isEmpty)
+                _emptyHint('🌀', 'Belum ada habit.', 'Tap ＋ untuk membangun kebiasaan baru.')
+              else
+                ...List.generate(state.habits.length, (i) {
+                  final h = state.habits[i];
+                  return HabitItem(
+                    habit: h,
+                    iconBg: _habitColors[i % _habitColors.length],
+                    onAction: (positive) => state.doHabit(h, positive),
+                    onLongPress: () => _showOptionsSheet(context, state, habit: h),
+                  );
+                }),
 
               const SectionTitle('Daily Tasks'),
-              ...state.dailyTasks.map((t) => TaskItem(
-                    task: t,
-                    onTap: () => state.toggleTask(t),
-                    onLongPress: () => _showOptionsSheet(context, state, task: t),
-                  )),
+              if (state.dailyTasks.isEmpty)
+                _emptyHint('📅', 'Belum ada daily.', 'Tugas harian yang berulang akan muncul di sini.')
+              else
+                ...state.dailyTasks.map((t) => TaskItem(
+                      task: t,
+                      enabled: _isDailyActiveToday(t),
+                      onTap: () => state.toggleTask(t),
+                      onLongPress: () => _showOptionsSheet(context, state, task: t),
+                    )),
 
               const SectionTitle('To-Do List'),
-              ...state.todos.map((t) => TaskItem(
-                    task: t,
-                    onTap: () => state.toggleTask(t),
-                    onLongPress: () => _showOptionsSheet(context, state, task: t),
-                  )),
+              if (state.todos.isEmpty)
+                _emptyHint('📝', 'To-do kosong.', 'Mantap — semua beres! Tap ＋ untuk tugas baru.')
+              else
+                ...state.todos.map((t) => TaskItem(
+                      task: t,
+                      onTap: () => state.toggleTask(t),
+                      onLongPress: () => _showOptionsSheet(context, state, task: t),
+                    )),
 
               const SizedBox(height: 16),
             ],
@@ -100,6 +110,11 @@ class TasksScreen extends StatelessWidget {
       },
     );
   }
+
+  // Label hari untuk tipe Daily (1=Senin … 7=Minggu).
+  static const Map<int, String> _dayLabels = {
+    1: 'Sen', 2: 'Sel', 3: 'Rab', 4: 'Kam', 5: 'Jum', 6: 'Sab', 7: 'Min',
+  };
 
   DateTime? _parseDeadline(String subtitle) {
     final match = RegExp(r'Tenggat: (\d{2})-(\d{2})-(\d{4})').firstMatch(subtitle);
@@ -112,12 +127,29 @@ class TasksScreen extends StatelessWidget {
     return null;
   }
 
-  String _parseDescription(String subtitle) {
-    final idx = subtitle.indexOf(' · Tenggat:');
-    if (idx != -1) {
-      return subtitle.substring(0, idx);
+  // Membaca hari pengulangan dari subtitle Daily, mis. "Setiap: Sen, Rab".
+  Set<int> _parseDays(String subtitle) {
+    final result = <int>{};
+    final match = RegExp(r'Setiap: ([^·]+)').firstMatch(subtitle);
+    if (match != null) {
+      for (final part in match.group(1)!.split(',').map((e) => e.trim())) {
+        _dayLabels.forEach((k, v) {
+          if (v == part) result.add(k);
+        });
+      }
     }
-    if (subtitle.startsWith('Tenggat: ')) {
+    return result;
+  }
+
+  // Daily hanya aktif (bisa diselesaikan) pada hari yang dipilih.
+  bool _isDailyActiveToday(TaskModel t) => t.isActiveOn(DateTime.now().weekday);
+
+  String _parseDescription(String subtitle) {
+    for (final marker in const [' · Tenggat:', ' · Setiap:']) {
+      final idx = subtitle.indexOf(marker);
+      if (idx != -1) return subtitle.substring(0, idx);
+    }
+    if (subtitle.startsWith('Tenggat: ') || subtitle.startsWith('Setiap: ')) {
       return '';
     }
     return subtitle;
@@ -246,7 +278,13 @@ class TasksScreen extends StatelessWidget {
         ? taskToEdit.type
         : (habitToEdit != null ? TaskType.habit : TaskType.todo);
     SkillAttribute attribute =
-        taskToEdit?.attribute ?? habitToEdit?.attribute ?? SkillAttribute.focus;
+        taskToEdit?.attribute ?? habitToEdit?.attribute ?? SkillAttribute.intelligence;
+
+    // Untuk tipe Daily: hari pengulangan (1=Senin … 7=Minggu).
+    Set<int> selectedDays = {};
+    if (taskToEdit != null && taskToEdit.type == TaskType.daily) {
+      selectedDays = _parseDays(taskToEdit.subtitle);
+    }
 
     showModalBottomSheet(
       context: context,
@@ -297,6 +335,9 @@ class TasksScreen extends StatelessWidget {
                   if (!isHabit) ...[
                     _sheetInput(descCtrl, 'Deskripsi / subtitle (Opsional)', Icons.info_outline),
                     const SizedBox(height: 10),
+
+                    // To-Do → tanggal deadline. Daily → hari pengulangan.
+                    if (type == TaskType.todo)
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
@@ -375,6 +416,49 @@ class TasksScreen extends StatelessWidget {
                         ],
                       ),
                     ),
+
+                    // Daily → pilih hari pengulangan (boleh lebih dari satu).
+                    if (type == TaskType.daily) ...[
+                      Text('Hari Pengulangan',
+                          style: TextStyle(fontSize: 12, color: AppColors.t3)),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _dayLabels.entries.map((e) {
+                          final sel = selectedDays.contains(e.key);
+                          return GestureDetector(
+                            onTap: () => setLocal(() {
+                              if (sel) {
+                                selectedDays.remove(e.key);
+                              } else {
+                                selectedDays.add(e.key);
+                              }
+                            }),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: sel
+                                    ? AppColors.accent.withValues(alpha: 0.15)
+                                    : AppColors.c1,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: sel ? AppColors.accent : AppColors.border,
+                                  width: sel ? 1 : 0.5,
+                                ),
+                              ),
+                              child: Text(
+                                e.value,
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: sel ? AppColors.accent2 : AppColors.t3),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
                     const SizedBox(height: 16),
                   ],
 
@@ -508,16 +592,23 @@ class TasksScreen extends StatelessWidget {
                           }
                         } else {
                           final desc = descCtrl.text.trim();
-                          final dateStr = selectedDate != null
-                              ? 'Tenggat: ${selectedDate!.day.toString().padLeft(2, '0')}-${selectedDate!.month.toString().padLeft(2, '0')}-${selectedDate!.year}'
-                              : '';
+                          String metaStr;
+                          if (type == TaskType.daily) {
+                            metaStr = selectedDays.isNotEmpty
+                                ? 'Setiap: ${(selectedDays.toList()..sort()).map((d) => _dayLabels[d]).join(', ')}'
+                                : 'Setiap hari';
+                          } else {
+                            metaStr = selectedDate != null
+                                ? 'Tenggat: ${selectedDate!.day.toString().padLeft(2, '0')}-${selectedDate!.month.toString().padLeft(2, '0')}-${selectedDate!.year}'
+                                : '';
+                          }
                           String finalSubtitle = '';
-                          if (desc.isNotEmpty && dateStr.isNotEmpty) {
-                            finalSubtitle = '$desc · $dateStr';
+                          if (desc.isNotEmpty && metaStr.isNotEmpty) {
+                            finalSubtitle = '$desc · $metaStr';
                           } else if (desc.isNotEmpty) {
                             finalSubtitle = desc;
-                          } else if (dateStr.isNotEmpty) {
-                            finalSubtitle = dateStr;
+                          } else if (metaStr.isNotEmpty) {
+                            finalSubtitle = metaStr;
                           } else {
                             finalSubtitle = '📝 Task baru';
                           }
@@ -594,6 +685,33 @@ class TasksScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: AppColors.accent, width: 1),
         ),
+      ),
+    );
+  }
+
+  // Placeholder elegan saat sebuah section kosong (anti area-melompong).
+  Widget _emptyHint(String emoji, String title, String subtitle) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 16),
+      decoration: BoxDecoration(
+        color: AppColors.c1.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border, width: 0.5),
+      ),
+      child: Column(
+        children: [
+          Opacity(opacity: 0.85, child: Text(emoji, style: const TextStyle(fontSize: 24))),
+          const SizedBox(height: 8),
+          Text(title,
+              style: TextStyle(
+                  fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.t2)),
+          const SizedBox(height: 3),
+          Text(subtitle,
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 10, color: AppColors.t3, height: 1.4)),
+        ],
       ),
     );
   }

@@ -194,19 +194,42 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 children: [
-                  const SizedBox(height: 60),
+                  const SizedBox(height: 56),
 
-                  // Logo & title
-                  const Text('🏰', style: TextStyle(fontSize: 56)),
-                  const SizedBox(height: 12),
-                  Text(
-                    'HeroQuest',
-                    style: TextStyle(
-                      fontFamily: 'Cinzel',
-                      fontSize: 26,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.t1,
-                      letterSpacing: 1,
+                  // Emblem ber-glow — konsisten dengan layar Login.
+                  Container(
+                    width: 84, height: 84,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [AppColors.accent.withValues(alpha: 0.35), AppColors.c2],
+                      ),
+                      borderRadius: BorderRadius.circular(26),
+                      border: Border.all(color: AppColors.accent.withValues(alpha: 0.5), width: 1),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.accent.withValues(alpha: 0.28),
+                          blurRadius: 28,
+                          spreadRadius: -4,
+                        ),
+                      ],
+                    ),
+                    child: const Center(child: Text('🏰', style: TextStyle(fontSize: 42))),
+                  ),
+                  const SizedBox(height: 16),
+                  RichText(
+                    text: TextSpan(
+                      style: const TextStyle(
+                        fontFamily: 'Cinzel',
+                        fontSize: 26,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1,
+                      ),
+                      children: [
+                        TextSpan(text: 'Hero', style: TextStyle(color: AppColors.t1)),
+                        TextSpan(text: 'Quest', style: TextStyle(color: AppColors.gold2)),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -216,7 +239,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
                         fontSize: 14, color: AppColors.t3, letterSpacing: 0.3),
                   ),
 
-                  const SizedBox(height: 56),
+                  const SizedBox(height: 48),
 
                   // User card
                   _RoleCard(

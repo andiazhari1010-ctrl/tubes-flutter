@@ -47,8 +47,29 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(_pages[_page].emoji,
-                        style: const TextStyle(fontSize: 80)),
+                    Container(
+                      width: 132, height: 132,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [AppColors.accent.withValues(alpha: 0.28), AppColors.c2],
+                        ),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.accent.withValues(alpha: 0.4), width: 1),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.accent.withValues(alpha: 0.22),
+                            blurRadius: 36,
+                            spreadRadius: -6,
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(_pages[_page].emoji,
+                            style: const TextStyle(fontSize: 64)),
+                      ),
+                    ),
                     const SizedBox(height: 32),
                     Text(
                       _pages[_page].title,

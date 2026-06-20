@@ -21,8 +21,9 @@ class StatBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final pct = (maxValue <= 0 ? 0.0 : value / maxValue).clamp(0.0, 1.0);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.only(bottom: 7),
       child: Row(
         children: [
           SizedBox(
@@ -33,14 +34,34 @@ class StatBar extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(99),
-              child: LinearProgressIndicator(
-                value: value / maxValue,
-                minHeight: 6,
-                backgroundColor: Colors.white.withValues(alpha: 0.07),
-                valueColor: AlwaysStoppedAnimation<Color>(color),
-              ),
+            child: LayoutBuilder(
+              builder: (context, c) {
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(99),
+                  child: Stack(
+                    children: [
+                      Container(
+                        height: 7,
+                        width: c.maxWidth,
+                        color: Colors.white.withValues(alpha: 0.06),
+                      ),
+                      // Fill bergradien — kesan stat-bar game yang lebih kaya.
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 320),
+                        curve: Curves.easeOutCubic,
+                        height: 7,
+                        width: c.maxWidth * pct,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [color.withValues(alpha: 0.55), color],
+                          ),
+                          borderRadius: BorderRadius.circular(99),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
           const SizedBox(width: 8),
@@ -48,7 +69,8 @@ class StatBar extends StatelessWidget {
             width: 50,
             child: Text('$value/$maxValue',
                 textAlign: TextAlign.right,
-                style: TextStyle(fontSize: 10, color: color)),
+                style: TextStyle(
+                    fontSize: 10, fontWeight: FontWeight.w600, color: color)),
           ),
         ],
       ),
@@ -109,21 +131,43 @@ class SectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: 16, bottom: 10),
+      padding: const EdgeInsets.only(top: 18, bottom: 10),
       child: Row(
         children: [
+          // Accent tick — penanda hierarki yang disengaja.
+          Container(
+            width: 3,
+            height: 13,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [AppColors.accent2, AppColors.accent],
+              ),
+              borderRadius: BorderRadius.circular(99),
+            ),
+          ),
+          const SizedBox(width: 9),
           Text(
             title.toUpperCase(),
             style: TextStyle(
               fontFamily: 'Cinzel',
               fontSize: 11,
-              color: AppColors.t3,
+              fontWeight: FontWeight.w700,
+              color: AppColors.t2,
               letterSpacing: 1.5,
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
           Expanded(
-            child: Container(height: 0.5, color: AppColors.border),
+            child: Container(
+              height: 0.5,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [AppColors.border2, AppColors.border.withValues(alpha: 0)],
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -178,89 +222,108 @@ class TaskItem extends StatelessWidget {
   final TaskModel task;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
+  final bool enabled;
 
   const TaskItem({
     super.key,
     required this.task,
     required this.onTap,
     this.onLongPress,
+    this.enabled = true,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      // Saat tidak aktif (bukan jadwalnya hari ini), tap untuk menyelesaikan
+      // dimatikan — tapi long-press tetap aktif agar masih bisa diedit/dihapus.
+      onTap: enabled ? onTap : null,
       onLongPress: onLongPress,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
-        decoration: BoxDecoration(
-          color: AppColors.c1,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: task.isDone ? AppColors.accent.withValues(alpha: 0.4) : AppColors.border,
-            width: 0.5,
+      child: Opacity(
+        opacity: enabled ? 1.0 : 0.45,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+          decoration: BoxDecoration(
+            color: enabled ? AppColors.c1 : AppColors.c0,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: task.isDone ? AppColors.accent.withValues(alpha: 0.4) : AppColors.border,
+              width: 0.5,
+            ),
           ),
-        ),
-        child: Row(
-          children: [
-            PriorityDot(task.priority),
-            const SizedBox(width: 10),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: 22, height: 22,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: task.isDone ? AppColors.accent : Colors.transparent,
-                border: Border.all(color: AppColors.accent, width: 1.5),
-              ),
-              child: task.isDone
-                  ? const Icon(Icons.check, size: 13, color: Colors.white)
-                  : null,
-            ),
-            const SizedBox(width: 11),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    task.title,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: task.isDone ? AppColors.t3 : AppColors.t1,
-                      decoration: task.isDone ? TextDecoration.lineThrough : null,
-                      decorationColor: AppColors.t3,
-                    ),
-                    overflow: TextOverflow.ellipsis,
+          child: Row(
+            children: [
+              PriorityDot(task.priority),
+              const SizedBox(width: 10),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 22, height: 22,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: task.isDone ? AppColors.accent : Colors.transparent,
+                  border: Border.all(
+                    color: enabled ? AppColors.accent : AppColors.t3,
+                    width: 1.5,
                   ),
-                  const SizedBox(height: 2),
-                  Text(task.subtitle,
-                      style: TextStyle(fontSize: 10, color: AppColors.t3)),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                RewardPill(
-                  text: '+${task.xpReward} XP',
-                  bg: AppColors.xp.withValues(alpha: 0.15),
-                  fg: AppColors.xp,
                 ),
-                if (task.goldReward > 0) ...[
-                  const SizedBox(height: 3),
-                  RewardPill(
-                    text: '+${task.goldReward}G',
-                    bg: AppColors.gold.withValues(alpha: 0.15),
-                    fg: AppColors.gold,
-                  ),
-                ],
-              ],
-            ),
-          ],
+                child: task.isDone
+                    ? const Icon(Icons.check, size: 13, color: Colors.white)
+                    : (enabled
+                        ? null
+                        : Icon(Icons.lock_outline, size: 11, color: AppColors.t3)),
+              ),
+              const SizedBox(width: 11),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      task.title,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: task.isDone ? AppColors.t3 : AppColors.t1,
+                        decoration: task.isDone ? TextDecoration.lineThrough : null,
+                        decorationColor: AppColors.t3,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(task.subtitle,
+                        style: TextStyle(fontSize: 10, color: AppColors.t3)),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              if (enabled)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    RewardPill(
+                      text: '+${task.xpReward} XP',
+                      bg: AppColors.xp.withValues(alpha: 0.15),
+                      fg: AppColors.xp,
+                    ),
+                    if (task.goldReward > 0) ...[
+                      const SizedBox(height: 3),
+                      RewardPill(
+                        text: '+${task.goldReward}G',
+                        bg: AppColors.gold.withValues(alpha: 0.15),
+                        fg: AppColors.gold,
+                      ),
+                    ],
+                  ],
+                )
+              else
+                RewardPill(
+                  text: 'Bukan hari ini',
+                  bg: AppColors.t3.withValues(alpha: 0.12),
+                  fg: AppColors.t3,
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -346,9 +409,10 @@ class HabitItem extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 28, height: 28,
+        width: 30, height: 30,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(9),
+          color: textColor.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(color: borderColor, width: 0.5),
         ),
         child: Center(
@@ -582,14 +646,34 @@ class QuestCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(99),
-              child: LinearProgressIndicator(
-                value: quest.progress / 100,
-                minHeight: 4,
-                backgroundColor: Colors.white.withValues(alpha: 0.07),
-                valueColor: AlwaysStoppedAnimation<Color>(barColor),
-              ),
+            LayoutBuilder(
+              builder: (context, c) {
+                final frac = (quest.progress / 100).clamp(0.0, 1.0);
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(99),
+                  child: Stack(
+                    children: [
+                      Container(
+                        height: 5,
+                        width: c.maxWidth,
+                        color: Colors.white.withValues(alpha: 0.07),
+                      ),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 320),
+                        curve: Curves.easeOutCubic,
+                        height: 5,
+                        width: c.maxWidth * frac,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [barColor.withValues(alpha: 0.5), barColor],
+                          ),
+                          borderRadius: BorderRadius.circular(99),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 5),
             Row(

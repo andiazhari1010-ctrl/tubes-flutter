@@ -4,7 +4,7 @@ enum HeroClass { warrior, mage, healer, rogue }
 
 enum TaskPriority { high, medium, low }
 
-enum SkillAttribute { intelligence, strength, creativity, knowledge, focus }
+enum SkillAttribute { intelligence, strength, creativity }
 
 extension SkillAttributeExtension on SkillAttribute {
   String get name {
@@ -12,8 +12,6 @@ extension SkillAttributeExtension on SkillAttribute {
       case SkillAttribute.intelligence: return 'Intelligence';
       case SkillAttribute.strength: return 'Strength';
       case SkillAttribute.creativity: return 'Creativity';
-      case SkillAttribute.knowledge: return 'Knowledge';
-      case SkillAttribute.focus: return 'Focus';
     }
   }
 
@@ -22,9 +20,29 @@ extension SkillAttributeExtension on SkillAttribute {
       case SkillAttribute.intelligence: return '🧠';
       case SkillAttribute.strength: return '💪';
       case SkillAttribute.creativity: return '🎨';
-      case SkillAttribute.knowledge: return '📚';
-      case SkillAttribute.focus: return '🎯';
     }
+  }
+
+  // Deskripsi singkat per atribut (dipakai di layar Statistics).
+  String get description {
+    switch (this) {
+      case SkillAttribute.intelligence: return 'Belajar, Logika & Fokus';
+      case SkillAttribute.strength: return 'Olahraga & Fisik';
+      case SkillAttribute.creativity: return 'Desain & Seni';
+    }
+  }
+}
+
+/// Mengubah string tersimpan menjadi [SkillAttribute].
+/// Nilai lama 'knowledge' & 'focus' kini dilebur ke Intelligence.
+SkillAttribute parseSkillAttribute(dynamic raw) {
+  switch (raw) {
+    case 'strength':
+      return SkillAttribute.strength;
+    case 'creativity':
+      return SkillAttribute.creativity;
+    default:
+      return SkillAttribute.intelligence;
   }
 }
 
@@ -172,7 +190,7 @@ class TaskModel {
     this.goldReward = 10,
     this.priority = TaskPriority.medium,
     this.type = TaskType.todo,
-    this.attribute = SkillAttribute.focus,
+    this.attribute = SkillAttribute.intelligence,
   });
 
   Map<String, dynamic> toMap() {
@@ -189,6 +207,27 @@ class TaskModel {
     };
   }
 
+  // Hari pengulangan untuk Daily, di-encode di subtitle ("Setiap: Sen, Rab").
+  // 1=Senin … 7=Minggu. Kosong = berlaku setiap hari.
+  Set<int> get repeatDays {
+    const labels = {'Sen': 1, 'Sel': 2, 'Rab': 3, 'Kam': 4, 'Jum': 5, 'Sab': 6, 'Min': 7};
+    final match = RegExp(r'Setiap: ([^·]+)').firstMatch(subtitle);
+    final result = <int>{};
+    if (match != null) {
+      for (final p in match.group(1)!.split(',').map((e) => e.trim())) {
+        final n = labels[p];
+        if (n != null) result.add(n);
+      }
+    }
+    return result;
+  }
+
+  // Apakah daily ini aktif pada [weekday] (1=Senin..7=Minggu)?
+  bool isActiveOn(int weekday) {
+    final days = repeatDays;
+    return days.isEmpty || days.contains(weekday);
+  }
+
   factory TaskModel.fromMap(Map<String, dynamic> map) {
     TaskPriority priorityVal = TaskPriority.medium;
     try {
@@ -200,10 +239,7 @@ class TaskModel {
       typeVal = TaskType.values.firstWhere((e) => e.name == map['type']);
     } catch (_) {}
 
-    SkillAttribute attrVal = SkillAttribute.focus;
-    try {
-      attrVal = SkillAttribute.values.firstWhere((e) => e.name == map['attribute']);
-    } catch (_) {}
+    final SkillAttribute attrVal = parseSkillAttribute(map['attribute']);
 
     return TaskModel(
       id: map['id'] ?? '',
@@ -235,7 +271,7 @@ class HabitModel {
     required this.emoji,
     this.streak = 0,
     this.xpReward = 15,
-    this.attribute = SkillAttribute.focus,
+    this.attribute = SkillAttribute.intelligence,
   });
 
   Map<String, dynamic> toMap() {
@@ -250,10 +286,7 @@ class HabitModel {
   }
 
   factory HabitModel.fromMap(Map<String, dynamic> map) {
-    SkillAttribute attrVal = SkillAttribute.focus;
-    try {
-      attrVal = SkillAttribute.values.firstWhere((e) => e.name == map['attribute']);
-    } catch (_) {}
+    final SkillAttribute attrVal = parseSkillAttribute(map['attribute']);
 
     return HabitModel(
       id: map['id'] ?? '',

@@ -14,6 +14,10 @@ class HomeScreen extends StatelessWidget {
     return Consumer<AppState>(
       builder: (context, state, _) {
         final hero = state.hero;
+        final todayWeekday = DateTime.now().weekday;
+        // Daily yang jadwalnya hari ini + To-Do bertanda "Hari ini".
+        final todayDailies =
+            state.dailyTasks.where((t) => t.isActiveOn(todayWeekday)).toList();
         final todayTasks =
             state.todos.where((t) => t.subtitle.contains('Hari ini')).toList();
 
@@ -428,11 +432,19 @@ class HomeScreen extends StatelessWidget {
                             .map((b) => QuestCard(quest: b)),
                       ],
 
-                      const SectionTitle('Today'),
-                      ...todayTasks.map((t) => TaskItem(
-                            task: t,
-                            onTap: () => state.toggleTask(t),
-                          )),
+                      SectionTitle('Today · ${_dayName(todayWeekday)}'),
+                      if (todayDailies.isEmpty && todayTasks.isEmpty)
+                        _todayEmpty()
+                      else ...[
+                        ...todayDailies.map((t) => TaskItem(
+                              task: t,
+                              onTap: () => state.toggleTask(t),
+                            )),
+                        ...todayTasks.map((t) => TaskItem(
+                              task: t,
+                              onTap: () => state.toggleTask(t),
+                            )),
+                      ],
 
                       const SizedBox(height: 16),
                     ],
@@ -443,6 +455,35 @@ class HomeScreen extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  String _dayName(int weekday) {
+    const names = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+    return names[(weekday - 1) % 7];
+  }
+
+  Widget _todayEmpty() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 16),
+      decoration: BoxDecoration(
+        color: AppColors.c1.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border, width: 0.5),
+      ),
+      child: Column(
+        children: [
+          const Text('🌙', style: TextStyle(fontSize: 22)),
+          const SizedBox(height: 8),
+          Text('Tidak ada agenda hari ini',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.t2)),
+          const SizedBox(height: 3),
+          Text('Daily yang dijadwalkan hari ini akan muncul di sini.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 10, color: AppColors.t3, height: 1.4)),
+        ],
+      ),
     );
   }
 

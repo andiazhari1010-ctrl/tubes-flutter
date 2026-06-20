@@ -91,50 +91,87 @@ class _ShopItemTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final rc = item.rarityColor;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.c2,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: item.owned ? AppColors.accent.withValues(alpha: 0.3) : AppColors.border,
+          color: item.owned
+              ? AppColors.accent.withValues(alpha: 0.4)
+              : rc.withValues(alpha: 0.28),
           width: 1,
         ),
+        // Item legendaris bercahaya halus.
+        boxShadow: item.rarity == ItemRarity.legendary
+            ? [BoxShadow(color: rc.withValues(alpha: 0.14), blurRadius: 16, spreadRadius: -2)]
+            : null,
       ),
       child: Row(
         children: [
-          // Item Icon
+          // Item Icon — di-tint sesuai rarity.
           Container(
             width: 60, height: 60,
             decoration: BoxDecoration(
-              color: AppColors.c3,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [rc.withValues(alpha: 0.22), AppColors.c3],
+              ),
               borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: rc.withValues(alpha: 0.4), width: 0.5),
             ),
             child: Center(
               child: Text(item.emoji, style: const TextStyle(fontSize: 28)),
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
           // Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  item.name,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.t1,
-                  ),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        item.name,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.t1,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Badge rarity.
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: rc.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        item.rarity.name.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 8,
+                          fontWeight: FontWeight.w800,
+                          color: rc,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Text(
                   item.description,
-                  style: TextStyle(fontSize: 12, color: AppColors.t2),
+                  style: TextStyle(fontSize: 11, color: AppColors.t2),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 7),
                 Text(
                   item.category.name.toUpperCase(),
                   style: TextStyle(

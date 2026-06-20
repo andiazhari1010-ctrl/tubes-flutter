@@ -62,13 +62,9 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
           _secondsRemaining = _selectedDuration * 60;
         });
         
-        // Add reward to hero for focusing
+        // Add reward to hero for focusing (level-up ditangani konsisten).
         final state = Provider.of<AppState>(context, listen: false);
-        state.hero.xp += 50;
-        state.hero.gold += 20;
-        state.hero.focus += 5;
-        state.addNotification("🎯 Focus Session Complete! (+50 XP / +20G)");
-        state.saveToFirestore();
+        state.completeFocusSession();
       }
     });
   }

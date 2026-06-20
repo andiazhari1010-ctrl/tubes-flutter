@@ -528,9 +528,8 @@ class AppState extends ChangeNotifier {
           if (newB.progress == 0 && oldB.progress > 0) {
             if (!completedGlobalQuests.contains(newB.id)) {
               completedGlobalQuests.add(newB.id);
-              hero.xp += newB.xpReward;
               addNotification("🎉 Boss ${newB.title} Berhasil Dikalahkan! (+${newB.xpReward} XP)");
-              _checkLevelUp();
+              _applyXp(newB.xpReward);
               saveToFirestore();
             }
           }
@@ -703,6 +702,7 @@ class AppState extends ChangeNotifier {
     saveToFirestore();
   }
 
+  // Dipakai saat load data: normalisasi xp yang mungkin tersimpan >= 100.
   void _checkLevelUp() {
     bool leveledUp = false;
     while (hero.xp >= 100) {
@@ -721,13 +721,35 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  /// Menambah/mengurangi XP dengan benar — level ikut naik DAN turun.
+  /// Mencegah bug XP jadi 0 / level nyangkut saat task di-cancel.
+  void _applyXp(int delta) {
+    // Total XP terkumpul lintas level (Lv.1 = 0..99, Lv.2 mulai dari 100, dst).
+    final currentTotal = (hero.level - 1) * 100 + hero.xp;
+    var total = currentTotal + delta;
+    if (total < 0) total = 0;
+
+    final newLevel = 1 + (total ~/ 100);
+    final leveledUp = newLevel > hero.level;
+
+    hero.level = newLevel;
+    hero.xp = total % 100;
+    hero.maxXp = 100;
+
+    if (leveledUp) {
+      hero.maxHp = 150;
+      hero.hp = 150;
+      hero.maxMp = 100;
+      hero.mp = 100;
+      addNotification("🎉 LEVEL UP! Reached Level ${hero.level}");
+    }
+  }
+
   void _incrementSkill(SkillAttribute attr) {
     switch (attr) {
       case SkillAttribute.intelligence: hero.intelligence += 1; break;
       case SkillAttribute.strength: hero.strength += 1; break;
       case SkillAttribute.creativity: hero.creativity += 1; break;
-      case SkillAttribute.knowledge: hero.knowledge += 1; break;
-      case SkillAttribute.focus: hero.focus += 1; break;
     }
   }
 
@@ -736,8 +758,6 @@ class AppState extends ChangeNotifier {
       case SkillAttribute.intelligence: hero.intelligence = (hero.intelligence - 1).clamp(0, 9999); break;
       case SkillAttribute.strength: hero.strength = (hero.strength - 1).clamp(0, 9999); break;
       case SkillAttribute.creativity: hero.creativity = (hero.creativity - 1).clamp(0, 9999); break;
-      case SkillAttribute.knowledge: hero.knowledge = (hero.knowledge - 1).clamp(0, 9999); break;
-      case SkillAttribute.focus: hero.focus = (hero.focus - 1).clamp(0, 9999); break;
     }
   }
 
@@ -747,10 +767,9 @@ class AppState extends ChangeNotifier {
         q.progress = (q.progress + 20).clamp(0, 100);
         addNotification("⚔️ Quest Progress Updated");
         if (q.progress >= 100) {
-          hero.xp = hero.xp + q.xpReward;
           hero.totalQuestsCompleted += 1;
           addNotification("🏆 Quest Completed: ${q.title}");
-          _checkLevelUp();
+          _applyXp(q.xpReward);
         }
         break;
       }
@@ -765,10 +784,9 @@ class AppState extends ChangeNotifier {
         q.progress = (q.progress + 20).clamp(0, 100);
         addNotification("⚔️ Progres Quest '${q.title}' bertambah (+20%)");
         if (q.progress >= 100) {
-          hero.xp = hero.xp + q.xpReward;
           hero.totalQuestsCompleted += 1;
           addNotification("🏆 Quest Selesai: ${q.title} (+${q.xpReward} XP)");
-          _checkLevelUp();
+          _applyXp(q.xpReward);
         }
         notifyListeners();
         saveToFirestore();
@@ -827,14 +845,13 @@ class AppState extends ChangeNotifier {
       }
       int xpGained = (task.xpReward * mult).toInt();
       int goldGained = (task.goldReward * mult).toInt();
-      
-      hero.xp = (hero.xp + xpGained);
+
       hero.gold += goldGained;
       hero.totalTasksCompleted += 1;
       hero.momentum = (hero.momentum + 15).clamp(0, 100);
-      
+
       _incrementSkill(task.attribute);
-      _checkLevelUp();
+      _applyXp(xpGained);
       _updateQuestProgress();
 
       addNotification("✨ XP Gained (x$mult bonus!)");
@@ -842,12 +859,12 @@ class AppState extends ChangeNotifier {
     } else {
       int xpLost = (task.xpReward * mult).toInt();
       int goldLost = (task.goldReward * mult).toInt();
-      
-      hero.xp = (hero.xp - xpLost).clamp(0, hero.maxXp);
+
+      _applyXp(-xpLost);
       hero.gold = (hero.gold - goldLost).clamp(0, 999999);
       hero.totalTasksCompleted = (hero.totalTasksCompleted - 1).clamp(0, 999999);
       hero.momentum = (hero.momentum - 15).clamp(0, 100);
-      
+
       _decrementSkill(task.attribute);
     }
     notifyListeners();
@@ -861,13 +878,12 @@ class AppState extends ChangeNotifier {
         AudioHelper.playSfx();
       }
       int xpGained = (habit.xpReward * mult).toInt();
-      hero.xp = (hero.xp + xpGained);
       hero.gold += 5;
       habit.streak++;
       hero.momentum = (hero.momentum + 8).clamp(0, 100);
-      
+
       _incrementSkill(habit.attribute);
-      _checkLevelUp();
+      _applyXp(xpGained);
 
       addNotification("✨ XP Increased!");
       addNotification("🔥 Habit Streak Up!");
@@ -879,6 +895,16 @@ class AppState extends ChangeNotifier {
       addNotification("💔 Health Reduced!");
       addNotification("⚠️ Momentum Lost!");
     }
+    notifyListeners();
+    saveToFirestore();
+  }
+
+  // Reward setelah menyelesaikan satu sesi Focus Mode.
+  void completeFocusSession() {
+    hero.gold += 20;
+    hero.focus += 5;
+    _applyXp(50);
+    addNotification("🎯 Focus Session Complete! (+50 XP / +20G)");
     notifyListeners();
     saveToFirestore();
   }
@@ -908,8 +934,7 @@ class AppState extends ChangeNotifier {
     if (item.category == ItemCategory.potion) {
       if (item.id == 's3') hero.hp = (hero.hp + 30).clamp(0, hero.maxHp);
       if (item.id == 's4') {
-        hero.xp = (hero.xp + 100);
-        _checkLevelUp();
+        _applyXp(100);
       }
       if (item.id == 's8') hero.mp = (hero.mp + 15).clamp(0, hero.maxMp);
       
