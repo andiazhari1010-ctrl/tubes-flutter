@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_icons.dart';
 import '../models/app_state.dart';
 import '../models/models.dart';
 import '../widgets/common_widgets.dart';
@@ -19,7 +20,7 @@ class HomeScreen extends StatelessWidget {
         final todayDailies =
             state.dailyTasks.where((t) => t.isActiveOn(todayWeekday)).toList();
         final todayTasks =
-            state.todos.where((t) => t.subtitle.contains('Hari ini')).toList();
+            state.todos.where((t) => t.isDueToday).toList();
 
         return Scaffold(
           backgroundColor: AppColors.c0,
@@ -41,15 +42,22 @@ class HomeScreen extends StatelessWidget {
                                   fontSize: 11,
                                   color: AppColors.t3,
                                   fontWeight: FontWeight.w500)),
-                          Text(
-                            '${hero.name.split(' ').first} ${hero.classEmoji}',
-                            style: TextStyle(
-                              fontFamily: 'Cinzel',
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.t1,
-                              letterSpacing: 0.5,
-                            ),
+                          Row(
+                            children: [
+                              Text(
+                                hero.name.split(' ').first,
+                                style: TextStyle(
+                                  fontFamily: 'Cinzel',
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.t1,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Icon(AppIcons.heroClass(hero.heroClass),
+                                  size: 17, color: AppColors.accent2),
+                            ],
                           ),
                         ],
                       ),
@@ -59,7 +67,7 @@ class HomeScreen extends StatelessWidget {
                             clipBehavior: Clip.none,
                             children: [
                               _iconBtn(
-                                '🔔',
+                                AppIcons.notifications,
                                 onTap: () {
                                   state.markNotificationsAsRead();
                                   _showNotificationsSheet(context, state);
@@ -81,7 +89,7 @@ class HomeScreen extends StatelessWidget {
                             ],
                           ),
                           const SizedBox(width: 8),
-                          _iconBtn('🛒', onTap: () {
+                          _iconBtn(AppIcons.shop, onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(builder: (_) => const ShopScreen()),
@@ -124,9 +132,10 @@ class HomeScreen extends StatelessWidget {
                                             width: 2),
                                       ),
                                       child: Center(
-                                        child: Text(hero.classEmoji,
-                                            style:
-                                                const TextStyle(fontSize: 26)),
+                                        child: Icon(
+                                            AppIcons.heroClass(hero.heroClass),
+                                            size: 28,
+                                            color: AppColors.accent2),
                                       ),
                                     ),
                                     Positioned(
@@ -164,7 +173,7 @@ class HomeScreen extends StatelessWidget {
                                           )),
                                       const SizedBox(height: 3),
                                       Text(
-                                        '${hero.classEmoji} ${hero.className} · ${state.partyName ?? "No Party"}',
+                                        '${hero.className} · ${state.partyName ?? "No Party"}',
                                         style: TextStyle(
                                             fontSize: 11,
                                             color: AppColors.accent2,
@@ -182,7 +191,7 @@ class HomeScreen extends StatelessWidget {
                                       shape: BoxShape.circle,
                                       border: Border.all(color: Colors.white.withValues(alpha: 0.08), width: 0.5),
                                     ),
-                                    child: const Text('ℹ️', style: TextStyle(fontSize: 12)),
+                                    child: Icon(Icons.info_outline_rounded, size: 15, color: AppColors.t2),
                                   ),
                                 ),
                               ],
@@ -209,13 +218,13 @@ class HomeScreen extends StatelessWidget {
                               padding: const EdgeInsets.only(bottom: 6),
                               child: Row(
                                 children: [
-                                  const SizedBox(
+                                  SizedBox(
                                     width: 18,
                                     child: Text('MM',
                                         style: TextStyle(
                                             fontSize: 10,
                                             fontWeight: FontWeight.w800,
-                                            color: Color(0xFF00E5FF))),
+                                            color: AppColors.momentum)),
                                   ),
                                   const SizedBox(width: 8),
                                   Expanded(
@@ -227,7 +236,7 @@ class HomeScreen extends StatelessWidget {
                                             borderRadius: BorderRadius.circular(99),
                                             boxShadow: [
                                               BoxShadow(
-                                                color: const Color(0xFF00E5FF).withValues(alpha: 0.35),
+                                                color: AppColors.momentum.withValues(alpha: 0.35),
                                                 blurRadius: 6,
                                                 spreadRadius: 0.5,
                                               ),
@@ -240,7 +249,7 @@ class HomeScreen extends StatelessWidget {
                                             value: hero.momentum / 100.0,
                                             minHeight: 6,
                                             backgroundColor: Colors.white.withValues(alpha: 0.07),
-                                            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF00E5FF)),
+                                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.momentum),
                                           ),
                                         ),
                                       ],
@@ -252,10 +261,10 @@ class HomeScreen extends StatelessWidget {
                                     child: Text(
                                       '${hero.momentum}%${state.momentumMultiplier > 1.0 ? " (x${state.momentumMultiplier})" : ""}',
                                       textAlign: TextAlign.right,
-                                      style: const TextStyle(
-                                          fontSize: 9, 
-                                          fontWeight: FontWeight.w700, 
-                                          color: Color(0xFF00E5FF)),
+                                      style: TextStyle(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.momentum),
                                     ),
                                   ),
                                 ],
@@ -266,17 +275,20 @@ class HomeScreen extends StatelessWidget {
                             Row(
                               children: [
                                 CurrencyChip(
-                                    icon: '🪙',
+                                    icon: AppIcons.gold,
+                                    iconColor: AppColors.gold,
                                     value: '${hero.gold}',
                                     label: 'Gold'),
                                 const SizedBox(width: 8),
                                 CurrencyChip(
-                                    icon: '💎',
+                                    icon: AppIcons.gems,
+                                    iconColor: AppColors.accent2,
                                     value: '${hero.gems}',
                                     label: 'Gems'),
                                 const SizedBox(width: 8),
                                 CurrencyChip(
-                                    icon: '🔥',
+                                    icon: AppIcons.streak,
+                                    iconColor: AppColors.warning,
                                     value: '${hero.streak}',
                                     label: 'Streak'),
                               ],
@@ -308,9 +320,14 @@ class HomeScreen extends StatelessWidget {
                         ),
                         child: Row(
                           children: [
-                            Text(
-                              state.hasClaimedDaily ? '📆' : '🔥',
-                              style: const TextStyle(fontSize: 24),
+                            Icon(
+                              state.hasClaimedDaily
+                                  ? Icons.event_available_rounded
+                                  : AppIcons.streak,
+                              size: 24,
+                              color: state.hasClaimedDaily
+                                  ? AppColors.t2
+                                  : AppColors.gold,
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -343,13 +360,13 @@ class HomeScreen extends StatelessWidget {
                             ),
                             const SizedBox(width: 8),
                             if (!state.hasClaimedDaily)
-                              GestureDetector(
+                              PressableScale(
                                 onTap: () => state.claimDailyReward(),
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
-                                      colors: [AppColors.gold, Color(0xFFFF9800)],
+                                      colors: [AppColors.gold, AppColors.warning],
                                     ),
                                     borderRadius: BorderRadius.circular(10),
                                     boxShadow: [
@@ -474,7 +491,7 @@ class HomeScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
-          const Text('🌙', style: TextStyle(fontSize: 22)),
+          Icon(Icons.nightlight_round, size: 24, color: AppColors.t3),
           const SizedBox(height: 8),
           Text('Tidak ada agenda hari ini',
               style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.t2)),
@@ -487,9 +504,10 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _iconBtn(String icon, {required VoidCallback onTap}) {
-    return GestureDetector(
+  Widget _iconBtn(IconData icon, {required VoidCallback onTap}) {
+    return PressableScale(
       onTap: onTap,
+      scale: 0.9,
       child: Container(
         width: 34, height: 34,
         decoration: BoxDecoration(
@@ -498,7 +516,7 @@ class HomeScreen extends StatelessWidget {
           border: Border.all(color: AppColors.border, width: 0.5),
         ),
         child: Center(
-          child: Text(icon, style: const TextStyle(fontSize: 15)),
+          child: Icon(icon, size: 17, color: AppColors.t2),
         ),
       ),
     );
@@ -566,7 +584,7 @@ class HomeScreen extends StatelessWidget {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Text('🔔', style: TextStyle(fontSize: 32)),
+                                Icon(Icons.notifications_off_rounded, size: 34, color: AppColors.t3),
                                 const SizedBox(height: 10),
                                 Text(
                                   'Tidak ada notifikasi baru',
@@ -584,7 +602,7 @@ class HomeScreen extends StatelessWidget {
                                 padding: const EdgeInsets.symmetric(vertical: 12),
                                 child: Row(
                                   children: [
-                                    const Text('🔔', style: TextStyle(fontSize: 16)),
+                                    Icon(AppIcons.notifications, size: 16, color: AppColors.accent2),
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Text(
@@ -643,13 +661,13 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              _statExplainRow('❤️ HP (Health Points)', 'Kesehatan Hero Anda. HP berkurang jika Anda mengabaikan quest/boss, dan dapat dipulihkan dengan ramuan (potion) dari toko.'),
+              _statExplainRow(AppIcons.hp, AppColors.hp, 'HP (Health Points)', 'Kesehatan Hero Anda. HP berkurang jika Anda mengabaikan quest/boss, dan dapat dipulihkan dengan ramuan (potion) dari toko.'),
               const SizedBox(height: 12),
-              _statExplainRow('✨ XP (Experience Points)', 'Poin Pengalaman. Kumpulkan 100 XP untuk naik level. XP akan tereset ke 0 setelah level naik.'),
+              _statExplainRow(AppIcons.xp, AppColors.xp, 'XP (Experience Points)', 'Poin Pengalaman. Kumpulkan 100 XP untuk naik level. XP akan tereset ke 0 setelah level naik.'),
               const SizedBox(height: 12),
-              _statExplainRow('🧪 MP (Mana Points)', 'Mana / Energi Hero. Digunakan untuk beraktivitas atau menggunakan skill khusus tertentu.'),
+              _statExplainRow(AppIcons.mp, AppColors.mp, 'MP (Mana Points)', 'Mana / Energi Hero. Digunakan untuk beraktivitas atau menggunakan skill khusus tertentu.'),
               const SizedBox(height: 12),
-              _statExplainRow('⚡ MM (Momentum)', 'Productivity Momentum. Pengali XP/Gold (hingga x1.5) berdasarkan keaktifan Anda menyelesaikan tugas hari ini.'),
+              _statExplainRow(AppIcons.momentum, AppColors.momentum, 'MM (Momentum)', 'Productivity Momentum. Pengali XP/Gold (hingga x1.5) berdasarkan keaktifan Anda menyelesaikan tugas hari ini.'),
               const SizedBox(height: 16),
             ],
           ),
@@ -658,13 +676,22 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _statExplainRow(String title, String description) {
-    return Column(
+  Widget _statExplainRow(IconData icon, Color color, String title, String description) {
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: TextStyle(color: AppColors.t1, fontSize: 12, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 3),
-        Text(description, style: TextStyle(color: AppColors.t3, fontSize: 10, height: 1.4)),
+        Icon(icon, size: 16, color: color),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: TextStyle(color: AppColors.t1, fontSize: 12, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 3),
+              Text(description, style: TextStyle(color: AppColors.t3, fontSize: 10, height: 1.4)),
+            ],
+          ),
+        ),
       ],
     );
   }

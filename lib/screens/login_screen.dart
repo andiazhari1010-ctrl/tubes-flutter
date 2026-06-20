@@ -70,11 +70,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
         final cred = await _authService.registerWithEmail(email, pass);
         if (cred?.user != null) {
-          final isAdm = email.toLowerCase().contains('admin') || email.toLowerCase().contains('tubaguslinggaap');
+          // Pendaftaran mandiri selalu sebagai 'user'. Promosi admin hanya
+          // lewat admin lain atau Firebase Console (lihat firestore.rules).
           await _firestoreService.createUserDoc(
             uid: cred!.user!.uid,
             email: email,
-            role: isAdm ? 'admin' : 'user',
+            role: 'user',
             username: username,
             fullName: fullName,
             phone: phone,
@@ -112,12 +113,12 @@ class _LoginScreenState extends State<LoginScreen> {
       if (user != null) {
         final exists = await _firestoreService.userDocExists(user.uid);
         if (!exists) {
-          // Buat dokumen baru di Firestore untuk pengguna baru Google
-          final isAdm = (user.email ?? '').toLowerCase().contains('admin') || (user.email ?? '').toLowerCase().contains('tubaguslinggaap');
+          // Buat dokumen baru di Firestore untuk pengguna baru Google.
+          // Pendaftaran mandiri selalu sebagai 'user'.
           await _firestoreService.createUserDoc(
             uid: user.uid,
             email: user.email ?? '',
-            role: isAdm ? 'admin' : 'user',
+            role: 'user',
             username: user.displayName?.replaceAll(' ', '').toLowerCase() ?? 'user_${user.uid.substring(0, 5)}',
             fullName: user.displayName ?? 'New Hero',
             phone: user.phoneNumber ?? '',
@@ -260,7 +261,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ],
                 ),
-                child: const Center(child: Text('🏰', style: TextStyle(fontSize: 46))),
+                child: Center(child: Icon(Icons.castle_rounded, size: 46, color: AppColors.accent2)),
               ),
               const SizedBox(height: 18),
               // Judul two-tone Cinzel.
@@ -286,13 +287,20 @@ class _LoginScreenState extends State<LoginScreen> {
                   borderRadius: BorderRadius.circular(99),
                   border: Border.all(color: AppColors.border, width: 0.5),
                 ),
-                child: Text(
-                  '⚔  GAMIFIED TASK MANAGEMENT',
-                  style: TextStyle(
-                      fontSize: 9.5,
-                      color: AppColors.t2,
-                      letterSpacing: 1.2,
-                      fontWeight: FontWeight.w600),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.sports_esports_rounded, size: 12, color: AppColors.t2),
+                    const SizedBox(width: 6),
+                    Text(
+                      'GAMIFIED TASK MANAGEMENT',
+                      style: TextStyle(
+                          fontSize: 9.5,
+                          color: AppColors.t2,
+                          letterSpacing: 1.2,
+                          fontWeight: FontWeight.w600),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 44),
@@ -398,7 +406,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Expanded(
                       child: Divider(color: AppColors.border, thickness: 0.5)),
                   Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Text('atau',
                         style: TextStyle(fontSize: 11, color: AppColors.t3)),
                   ),
@@ -413,7 +421,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 width: double.infinity,
                 child: OutlinedButton.icon(
                   onPressed: _isLoading ? null : _signInWithGoogle,
-                  icon: const Text('🌐', style: TextStyle(fontSize: 16)),
+                  icon: const Icon(Icons.g_mobiledata_rounded, size: 24),
                   label: const Text('Lanjut dengan Google'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.t1,

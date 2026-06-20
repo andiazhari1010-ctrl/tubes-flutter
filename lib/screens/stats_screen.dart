@@ -12,8 +12,9 @@ class StatsScreen extends StatelessWidget {
       builder: (context, state, _) {
         final hero = state.hero;
 
-        // Intelligence kini mencakup nilai lama Knowledge & Focus.
-        final intelligenceTotal = hero.intelligence + hero.knowledge + hero.focus;
+        // Knowledge & Focus lama sudah dilebur ke Intelligence saat load,
+        // jadi Intelligence adalah satu-satunya sumber kebenaran sekarang.
+        final intelligenceTotal = hero.intelligence;
 
         return Scaffold(
           backgroundColor: AppColors.c0,
@@ -40,7 +41,7 @@ class StatsScreen extends StatelessWidget {
                 childAspectRatio: 1.6,
                 children: [
                   _statCard('Total Task', '${hero.totalTasksCompleted}', 'SELESAI', Icons.task_alt_rounded, AppColors.xp),
-                  _statCard('Total XP', '${hero.xp + (hero.level * 100)}', 'TERKUMPUL', Icons.bolt_rounded, AppColors.accent2),
+                  _statCard('Total XP', '${hero.xp + (hero.level - 1) * 100}', 'TERKUMPUL', Icons.bolt_rounded, AppColors.accent2),
                   _statCard('Level Hero', 'LV. ${hero.level}', 'PERKEMBANGAN', Icons.workspace_premium_rounded, AppColors.gold),
                   _statCard('Quest Selesai', '${hero.totalQuestsCompleted}', 'PETUALANGAN', Icons.explore_rounded, AppColors.mp),
                 ],
@@ -71,9 +72,9 @@ class StatsScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    _skillRow('🧠 Intelligence', intelligenceTotal, 'Belajar, Logika & Fokus', const Color(0xFF85B7EB)),
-                    _skillRow('💪 Strength', hero.strength, 'Olahraga & Fisik', const Color(0xFFE24B4A)),
-                    _skillRow('🎨 Creativity', hero.creativity, 'Desain & Seni', const Color(0xFFFAC775)),
+                    _skillRow(Icons.psychology_rounded, 'Intelligence', intelligenceTotal, 'Belajar, Logika & Fokus', const Color(0xFF85B7EB)),
+                    _skillRow(Icons.fitness_center_rounded, 'Strength', hero.strength, 'Olahraga & Fisik', const Color(0xFFE24B4A)),
+                    _skillRow(Icons.palette_rounded, 'Creativity', hero.creativity, 'Desain & Seni', const Color(0xFFFAC775)),
                   ],
                 ),
               ),
@@ -134,7 +135,7 @@ class StatsScreen extends StatelessWidget {
     );
   }
 
-  Widget _skillRow(String label, int value, String desc, Color color) {
+  Widget _skillRow(IconData icon, String label, int value, String desc, Color color) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
@@ -143,9 +144,15 @@ class StatsScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                label,
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.t1),
+              Row(
+                children: [
+                  Icon(icon, size: 15, color: color),
+                  const SizedBox(width: 7),
+                  Text(
+                    label,
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.t1),
+                  ),
+                ],
               ),
               Row(
                 children: [

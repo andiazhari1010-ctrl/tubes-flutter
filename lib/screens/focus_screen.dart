@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_icons.dart';
 import '../models/app_state.dart';
 
 class FocusScreen extends StatefulWidget {
@@ -175,9 +176,10 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
                       Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
-                            state.hero.classEmoji,
-                            style: const TextStyle(fontSize: 32),
+                          Icon(
+                            AppIcons.heroClass(state.hero.heroClass),
+                            size: 32,
+                            color: AppColors.accent2,
                           ),
                           const SizedBox(height: 12),
                           Text(
@@ -274,7 +276,7 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
                       setState(() {
                         _soundEnabled = !_soundEnabled;
                       });
-                      state.addNotification(_soundEnabled ? "🔊 Soundscape Enabled: $_activeSound" : "🔇 Soundscape Muted");
+                      state.addNotification(_soundEnabled ? "Soundscape aktif: $_activeSound" : "Soundscape dimatikan");
                     },
                     child: Container(
                       width: 52,

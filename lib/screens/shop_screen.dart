@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_icons.dart';
 import '../models/app_state.dart';
 import '../models/models.dart';
+import '../widgets/common_widgets.dart';
 
 class ShopScreen extends StatelessWidget {
   const ShopScreen({super.key});
@@ -32,7 +34,7 @@ class ShopScreen extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Text('🪙', style: TextStyle(fontSize: 14)),
+                        Icon(AppIcons.gold, size: 15, color: AppColors.gold),
                         const SizedBox(width: 4),
                         Text(
                           '$gold',
@@ -54,21 +56,23 @@ class ShopScreen extends StatelessWidget {
             itemCount: state.shopItems.length,
             itemBuilder: (context, index) {
               final item = state.shopItems[index];
-              return _ShopItemTile(
-                item: item,
-                canAfford: gold >= item.price,
-                onBuy: () {
-                  if (gold >= item.price && !item.owned) {
-                    state.buyItem(item);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Berhasil membeli ${item.name}!'),
-                        backgroundColor: AppColors.green,
-                        duration: const Duration(seconds: 1),
-                      ),
-                    );
-                  }
-                },
+              return RevealOnce(
+                child: _ShopItemTile(
+                  item: item,
+                  canAfford: gold >= item.price,
+                  onBuy: () {
+                    if (gold >= item.price && !item.owned) {
+                      state.buyItem(item);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Berhasil membeli ${item.name}!'),
+                          backgroundColor: AppColors.green,
+                          duration: const Duration(seconds: 1),
+                        ),
+                      );
+                    }
+                  },
+                ),
               );
             },
           ),
@@ -124,7 +128,7 @@ class _ShopItemTile extends StatelessWidget {
               border: Border.all(color: rc.withValues(alpha: 0.4), width: 0.5),
             ),
             child: Center(
-              child: Text(item.emoji, style: const TextStyle(fontSize: 28)),
+              child: Icon(AppIcons.itemCategory(item.category), size: 28, color: rc),
             ),
           ),
           const SizedBox(width: 14),
@@ -214,7 +218,7 @@ class _ShopItemTile extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text('🪙', style: TextStyle(fontSize: 12)),
+                      Icon(AppIcons.gold, size: 13, color: canAfford ? Colors.white : AppColors.t3),
                       const SizedBox(width: 4),
                       Text(
                         '${item.price}',

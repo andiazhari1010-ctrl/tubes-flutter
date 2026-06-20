@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
+import '../../theme/app_icons.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import '../../services/firestore_service.dart';
 import '../../models/app_state.dart';
+import '../../models/models.dart';
 import '../auth_wrapper.dart';
 
 // Custom widget for section titles
@@ -44,7 +46,7 @@ class AdminDashboardScreen extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('🔒', style: TextStyle(fontSize: 48)),
+                    Icon(AppIcons.locked, size: 48, color: AppColors.gold),
                     const SizedBox(height: 16),
                     Text(
                       'Izin Database Ditolak',
@@ -145,7 +147,6 @@ class AdminDashboardScreen extends StatelessWidget {
         for (var doc in sorted.take(5)) {
           final data = doc.data();
           recent.add({
-            'emoji': '👤',
             'title': 'User baru terdaftar',
             'sub': data['email'] ?? 'unknown',
             'time': 'baru',
@@ -171,22 +172,28 @@ class AdminDashboardScreen extends StatelessWidget {
                                   fontSize: 11,
                                   color: AppColors.t3,
                                   fontWeight: FontWeight.w500)),
-                          Text('HeroQuest 🛡️',
-                              style: TextStyle(
-                                  fontFamily: 'Cinzel',
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.gold,
-                                  letterSpacing: 0.5)),
+                          Row(
+                            children: [
+                              Text('HeroQuest',
+                                  style: TextStyle(
+                                      fontFamily: 'Cinzel',
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.gold,
+                                      letterSpacing: 0.5)),
+                              const SizedBox(width: 6),
+                              Icon(AppIcons.admin, size: 16, color: AppColors.gold),
+                            ],
+                          ),
                         ],
                       ),
                       Row(
                         children: [
-                          _iconBtn('🔔'),
+                          _iconBtn(AppIcons.notifications),
                           const SizedBox(width: 8),
                           GestureDetector(
                             onTap: () => _showLogoutDialog(context),
-                            child: _iconBtn('🚪'),
+                            child: _iconBtn(AppIcons.logout),
                           ),
                           const SizedBox(width: 8),
                           _adminAvatar()
@@ -209,8 +216,8 @@ class AdminDashboardScreen extends StatelessWidget {
                           width: 0.5)),
                   child: Row(
                     children: [
-                      Text('🛡️', style: TextStyle(fontSize: 16)),
-                      SizedBox(width: 10),
+                      Icon(AppIcons.admin, size: 16, color: AppColors.gold),
+                      const SizedBox(width: 10),
                       Expanded(
                           child: Text('Anda masuk sebagai Administrator',
                               style: TextStyle(
@@ -236,29 +243,29 @@ class AdminDashboardScreen extends StatelessWidget {
                         childAspectRatio: 1.5,
                         children: [
                           _StatCard(
-                              emoji: '👥',
+                              icon: AppIcons.users,
                               value: '$totalUsers',
                               label: 'Total User',
-                              sub: '+$totalUsers baru',
+                              sub: 'terdaftar',
                               valueColor: AppColors.accent2),
                           _StatCard(
-                              emoji: '✅',
+                              icon: AppIcons.check,
                               value: '$totalTasks',
                               label: 'Task Selesai',
-                              sub: '+$totalTasks hari ini',
+                              sub: 'akumulatif',
                               valueColor: AppColors.xp),
                           _StatCard(
-                              emoji: '🔥',
+                              icon: AppIcons.streak,
                               value:
                                   '${(activeUsers / (totalUsers == 0 ? 1 : totalUsers) * 100).toStringAsFixed(0)}%',
                               label: 'User Aktif',
                               sub: '$activeUsers dari $totalUsers',
                               valueColor: AppColors.gold),
                           _StatCard(
-                              emoji: '⚔️',
+                              icon: AppIcons.xp,
                               value: '$totalXp',
                               label: 'Total XP',
-                              sub: '',
+                              sub: 'akumulatif',
                               valueColor: AppColors.accent),
                         ],
                       ),
@@ -267,24 +274,24 @@ class AdminDashboardScreen extends StatelessWidget {
                         children: [
                           Expanded(
                               child: _QuickAction(
-                                  emoji: '➕',
+                                  icon: AppIcons.quest,
                                   label: 'Tambah Quest',
                                   color: AppColors.accent,
-                                  onTap: () {})),
+                                  onTap: () => _showContentForm(context, isBoss: false))),
                           const SizedBox(width: 10),
                           Expanded(
                               child: _QuickAction(
-                                  emoji: '💀',
+                                  icon: AppIcons.boss,
                                   label: 'Spawn Boss',
                                   color: AppColors.red,
-                                  onTap: () {})),
+                                  onTap: () => _showContentForm(context, isBoss: true))),
                           const SizedBox(width: 10),
                           Expanded(
                               child: _QuickAction(
-                                  emoji: '📢',
+                                  icon: AppIcons.broadcast,
                                   label: 'Broadcast',
                                   color: AppColors.gold,
-                                  onTap: () {})),
+                                  onTap: () => _showBroadcastForm(context))),
                         ],
                       ),
                       const SectionTitle('Aktivitas Terbaru'),
@@ -332,7 +339,7 @@ class AdminDashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _iconBtn(String icon) {
+  Widget _iconBtn(IconData icon) {
     return Container(
       width: 34,
       height: 34,
@@ -341,7 +348,7 @@ class AdminDashboardScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.border, width: 0.5),
       ),
-      child: Center(child: Text(icon, style: const TextStyle(fontSize: 15))),
+      child: Center(child: Icon(icon, size: 17, color: AppColors.t2)),
     );
   }
 
@@ -355,8 +362,8 @@ class AdminDashboardScreen extends StatelessWidget {
         border: Border.all(
             color: AppColors.gold.withValues(alpha: 0.4), width: 0.5),
       ),
-      child: const Center(
-        child: Text('🛡️', style: TextStyle(fontSize: 15)),
+      child: Center(
+        child: Icon(AppIcons.admin, size: 17, color: AppColors.gold),
       ),
     );
   }
@@ -391,18 +398,159 @@ class AdminDashboardScreen extends StatelessWidget {
       ),
     );
   }
+
+  // ── Quick Actions ────────────────────────────────────────────────────────
+  void _showContentForm(BuildContext context, {required bool isBoss}) {
+    final state = Provider.of<AppState>(context, listen: false);
+    final titleCtrl = TextEditingController();
+    final xpCtrl = TextEditingController(text: isBoss ? '500' : '150');
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.c2,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+            left: 20, right: 20, top: 20,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 36),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _sheetHandle(),
+            const SizedBox(height: 16),
+            Text(isBoss ? 'Spawn Boss Baru' : 'Tambah Quest Baru',
+                style: TextStyle(fontFamily: 'Cinzel', fontSize: 16, color: AppColors.gold)),
+            const SizedBox(height: 16),
+            _dashInput(titleCtrl, isBoss ? 'Nama Boss' : 'Judul Quest', Icons.title),
+            const SizedBox(height: 10),
+            _dashInput(xpCtrl, 'XP Reward', Icons.star_outline, number: true),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.gold,
+                    foregroundColor: const Color(0xFF2A1A00)),
+                onPressed: () {
+                  final title = titleCtrl.text.trim();
+                  if (title.isEmpty) return;
+                  final xp = int.tryParse(xpCtrl.text.trim()) ?? (isBoss ? 500 : 150);
+                  final id = DateTime.now().millisecondsSinceEpoch.toString();
+                  if (isBoss) {
+                    state.addGlobalBoss(QuestModel(id: id, title: title, progress: 100, xpReward: xp, timeLeft: '1 Party', isBoss: true));
+                  } else {
+                    state.addGlobalQuest(QuestModel(id: id, title: title, progress: 100, xpReward: xp, timeLeft: '7 Hari Tersisa', isBoss: false));
+                  }
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text(isBoss ? 'Boss "$title" di-spawn!' : 'Quest "$title" ditambahkan!'),
+                      backgroundColor: Colors.green));
+                },
+                child: Text(isBoss ? 'Spawn Boss' : 'Tambah Quest',
+                    style: const TextStyle(fontWeight: FontWeight.w700)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showBroadcastForm(BuildContext context) {
+    final state = Provider.of<AppState>(context, listen: false);
+    final msgCtrl = TextEditingController();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.c2,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+            left: 20, right: 20, top: 20,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 36),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _sheetHandle(),
+            const SizedBox(height: 16),
+            Text('Broadcast ke Semua User',
+                style: TextStyle(fontFamily: 'Cinzel', fontSize: 16, color: AppColors.gold)),
+            const SizedBox(height: 4),
+            Text('Pesan muncul sebagai notifikasi di perangkat semua pengguna yang online.',
+                style: TextStyle(fontSize: 11, color: AppColors.t3)),
+            const SizedBox(height: 16),
+            _dashInput(msgCtrl, 'Tulis pengumuman...', Icons.campaign_outlined, lines: 3),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.gold,
+                    foregroundColor: const Color(0xFF2A1A00)),
+                onPressed: () {
+                  final msg = msgCtrl.text.trim();
+                  if (msg.isEmpty) return;
+                  state.sendBroadcast(msg);
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      content: Text('Broadcast terkirim ke semua user!'),
+                      backgroundColor: Colors.green));
+                },
+                child: const Text('Kirim Broadcast',
+                    style: TextStyle(fontWeight: FontWeight.w700)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _sheetHandle() => Center(
+      child: Container(
+          width: 36, height: 4,
+          decoration: BoxDecoration(
+              color: AppColors.t3, borderRadius: BorderRadius.circular(99))));
+
+  Widget _dashInput(TextEditingController ctrl, String hint, IconData icon,
+      {bool number = false, int lines = 1}) {
+    return TextField(
+      controller: ctrl,
+      keyboardType: number ? TextInputType.number : TextInputType.text,
+      maxLines: lines,
+      style: TextStyle(fontSize: 13, color: AppColors.t1),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: TextStyle(color: AppColors.t3),
+        prefixIcon: Icon(icon, color: AppColors.t3, size: 18),
+        filled: true,
+        fillColor: AppColors.c1,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: AppColors.border, width: 0.5)),
+        focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: AppColors.gold, width: 1)),
+      ),
+    );
+  }
 }
 
 // ── Stat Card ────────────────────────────────────────────────────────────────
 class _StatCard extends StatelessWidget {
-  final String emoji;
+  final IconData icon;
   final String value;
   final String label;
   final String sub;
   final Color valueColor;
 
   const _StatCard({
-    required this.emoji,
+    required this.icon,
     required this.value,
     required this.label,
     required this.sub,
@@ -425,7 +573,7 @@ class _StatCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(emoji, style: const TextStyle(fontSize: 18)),
+              Icon(icon, size: 18, color: valueColor),
               Text(value,
                   style: TextStyle(
                     fontFamily: 'Cinzel',
@@ -456,13 +604,13 @@ class _StatCard extends StatelessWidget {
 
 // ── Quick Action ─────────────────────────────────────────────────────────────
 class _QuickAction extends StatelessWidget {
-  final String emoji;
+  final IconData icon;
   final String label;
   final Color color;
   final VoidCallback onTap;
 
   const _QuickAction({
-    required this.emoji,
+    required this.icon,
     required this.label,
     required this.color,
     required this.onTap,
@@ -481,7 +629,7 @@ class _QuickAction extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Text(emoji, style: const TextStyle(fontSize: 22)),
+            Icon(icon, size: 24, color: color),
             const SizedBox(height: 5),
             Text(label,
                 textAlign: TextAlign.center,
@@ -511,7 +659,7 @@ class _ActivityTile extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Text(data['emoji']!, style: const TextStyle(fontSize: 18)),
+          Icon(Icons.person_add_alt_1_rounded, size: 18, color: AppColors.accent2),
           const SizedBox(width: 11),
           Expanded(
             child: Column(
@@ -570,7 +718,7 @@ class _BossStatusCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const Text('💀', style: TextStyle(fontSize: 16)),
+                  Icon(AppIcons.boss, size: 16, color: color),
                   const SizedBox(width: 8),
                   Text(name,
                       style: TextStyle(

@@ -1,8 +1,79 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_icons.dart';
 import '../models/models.dart';
 import 'package:provider/provider.dart';
 import '../models/app_state.dart';
+
+// ─── Pressable Scale ─────────────────────────────────────────────────────────
+/// Membungkus elemen interaktif dengan umpan-balik tekan (scale-down) halus,
+/// memberi kesan tombol fisik. Dipakai konsisten agar setiap CTA terasa "hidup".
+/// Feedback hanya muncul bila ada [onTap] (elemen non-aktif tetap diam).
+class PressableScale extends StatefulWidget {
+  final Widget child;
+  final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
+  final double scale;
+  const PressableScale({
+    super.key,
+    required this.child,
+    this.onTap,
+    this.onLongPress,
+    this.scale = 0.96,
+  });
+
+  @override
+  State<PressableScale> createState() => _PressableScaleState();
+}
+
+class _PressableScaleState extends State<PressableScale> {
+  bool _down = false;
+  void _set(bool v) {
+    if (_down != v) setState(() => _down = v);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final interactive = widget.onTap != null;
+    return GestureDetector(
+      onTap: widget.onTap,
+      onLongPress: widget.onLongPress,
+      onTapDown: interactive ? (_) => _set(true) : null,
+      onTapUp: interactive ? (_) => _set(false) : null,
+      onTapCancel: interactive ? () => _set(false) : null,
+      child: AnimatedScale(
+        scale: _down ? widget.scale : 1.0,
+        duration: const Duration(milliseconds: 110),
+        curve: Curves.easeOut,
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+// ─── Reveal Once ─────────────────────────────────────────────────────────────
+/// Entrance fade + slide-up sekali saat elemen pertama kali muncul. Motivasinya
+/// jelas (hierarki: menuntun mata dari atas ke bawah), bukan animasi asal. Pakai
+/// TweenAnimationBuilder agar tidak perlu controller & tidak re-trigger saat
+/// state lain berubah.
+class RevealOnce extends StatelessWidget {
+  final Widget child;
+  const RevealOnce({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 480),
+      curve: Curves.easeOutCubic,
+      builder: (context, t, child) => Opacity(
+        opacity: t.clamp(0.0, 1.0),
+        child: Transform.translate(offset: Offset(0, (1 - t) * 14), child: child),
+      ),
+      child: child,
+    );
+  }
+}
 
 // ─── Stat Bar ──────────────────────────────────────────────────────────────
 class StatBar extends StatelessWidget {
@@ -23,27 +94,25 @@ class StatBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final pct = (maxValue <= 0 ? 0.0 : value / maxValue).clamp(0.0, 1.0);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 7),
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Row(
         children: [
           SizedBox(
-            width: 18,
-            child: Text(label,
-                style: TextStyle(
-                    fontSize: 10, fontWeight: FontWeight.w700, color: color)),
+            width: 20,
+            child: Text(label, style: AppText.body(10, color: color, weight: FontWeight.w700)),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: LayoutBuilder(
               builder: (context, c) {
                 return ClipRRect(
-                  borderRadius: BorderRadius.circular(99),
+                  borderRadius: AppRadius.pillAll,
                   child: Stack(
                     children: [
                       Container(
                         height: 7,
                         width: c.maxWidth,
-                        color: Colors.white.withValues(alpha: 0.06),
+                        color: AppColors.t1.withValues(alpha: 0.06),
                       ),
                       // Fill bergradien — kesan stat-bar game yang lebih kaya.
                       AnimatedContainer(
@@ -55,7 +124,7 @@ class StatBar extends StatelessWidget {
                           gradient: LinearGradient(
                             colors: [color.withValues(alpha: 0.55), color],
                           ),
-                          borderRadius: BorderRadius.circular(99),
+                          borderRadius: AppRadius.pillAll,
                         ),
                       ),
                     ],
@@ -64,13 +133,12 @@ class StatBar extends StatelessWidget {
               },
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.sm),
           SizedBox(
             width: 50,
             child: Text('$value/$maxValue',
                 textAlign: TextAlign.right,
-                style: TextStyle(
-                    fontSize: 10, fontWeight: FontWeight.w600, color: color)),
+                style: AppText.body(10, color: color, weight: FontWeight.w600)),
           ),
         ],
       ),
@@ -80,40 +148,40 @@ class StatBar extends StatelessWidget {
 
 // ─── Currency Chip ─────────────────────────────────────────────────────────
 class CurrencyChip extends StatelessWidget {
-  final String icon;
+  final IconData icon;
   final String value;
   final String label;
+  final Color iconColor;
 
   const CurrencyChip(
-      {super.key, required this.icon, required this.value, required this.label});
+      {super.key,
+      required this.icon,
+      required this.value,
+      required this.label,
+      required this.iconColor});
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md, vertical: AppSpacing.sm),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.04),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.07), width: 0.5),
+          color: AppColors.t1.withValues(alpha: 0.04),
+          borderRadius: AppRadius.mdAll,
+          border: Border.all(color: AppColors.border, width: 0.5),
         ),
         child: Row(
           children: [
-            Text(icon, style: const TextStyle(fontSize: 14)),
-            const SizedBox(width: 6),
+            Icon(icon, size: 16, color: iconColor),
+            const SizedBox(width: AppSpacing.sm),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(value,
-                    style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.t1)),
+                Text(value, style: AppText.body(14, color: AppColors.t1, weight: FontWeight.w700)),
                 Text(label.toUpperCase(),
-                    style: TextStyle(
-                        fontSize: 9,
-                        color: AppColors.t3,
-                        letterSpacing: 0.5)),
+                    style: AppText.body(10, color: AppColors.t3, weight: FontWeight.w600)
+                        .copyWith(letterSpacing: 0.5)),
               ],
             ),
           ],
@@ -131,34 +199,26 @@ class SectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: 18, bottom: 10),
+      padding: const EdgeInsets.only(top: AppSpacing.lg + 2, bottom: AppSpacing.md),
       child: Row(
         children: [
           // Accent tick — penanda hierarki yang disengaja.
           Container(
             width: 3,
-            height: 13,
+            height: 14,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [AppColors.accent2, AppColors.accent],
               ),
-              borderRadius: BorderRadius.circular(99),
+              borderRadius: AppRadius.pillAll,
             ),
           ),
-          const SizedBox(width: 9),
-          Text(
-            title.toUpperCase(),
-            style: TextStyle(
-              fontFamily: 'Cinzel',
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: AppColors.t2,
-              letterSpacing: 1.5,
-            ),
-          ),
-          const SizedBox(width: 10),
+          const SizedBox(width: AppSpacing.sm + 1),
+          Text(title.toUpperCase(),
+              style: AppText.display(11, color: AppColors.t2, spacing: 1.5)),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Container(
               height: 0.5,
@@ -186,13 +246,9 @@ class RewardPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(7),
-      ),
-      child: Text(text,
-          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: fg)),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 3),
+      decoration: BoxDecoration(color: bg, borderRadius: AppRadius.smAll),
+      child: Text(text, style: AppText.body(10, color: fg, weight: FontWeight.w600)),
     );
   }
 }
@@ -234,7 +290,7 @@ class TaskItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return PressableScale(
       // Saat tidak aktif (bukan jadwalnya hari ini), tap untuk menyelesaikan
       // dimatikan — tapi long-press tetap aktif agar masih bisa diedit/dihapus.
       onTap: enabled ? onTap : null,
@@ -243,11 +299,12 @@ class TaskItem extends StatelessWidget {
         opacity: enabled ? 1.0 : 0.45,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+          margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md, vertical: AppSpacing.md),
           decoration: BoxDecoration(
             color: enabled ? AppColors.c1 : AppColors.c0,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: AppRadius.mdAll,
             border: Border.all(
               color: task.isDone ? AppColors.accent.withValues(alpha: 0.4) : AppColors.border,
               width: 0.5,
@@ -256,7 +313,7 @@ class TaskItem extends StatelessWidget {
           child: Row(
             children: [
               PriorityDot(task.priority),
-              const SizedBox(width: 10),
+              const SizedBox(width: AppSpacing.md),
               AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 width: 22, height: 22,
@@ -274,29 +331,27 @@ class TaskItem extends StatelessWidget {
                         ? null
                         : Icon(Icons.lock_outline, size: 11, color: AppColors.t3)),
               ),
-              const SizedBox(width: 11),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       task.title,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: task.isDone ? AppColors.t3 : AppColors.t1,
+                      style: AppText.body(13,
+                          color: task.isDone ? AppColors.t3 : AppColors.t1,
+                          weight: FontWeight.w500).copyWith(
                         decoration: task.isDone ? TextDecoration.lineThrough : null,
                         decorationColor: AppColors.t3,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
-                    Text(task.subtitle,
-                        style: TextStyle(fontSize: 10, color: AppColors.t3)),
+                    Text(task.subtitle, style: AppText.body(11, color: AppColors.t3)),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               if (enabled)
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -350,52 +405,52 @@ class HabitItem extends StatelessWidget {
     return GestureDetector(
       onLongPress: onLongPress,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md, vertical: AppSpacing.md),
         decoration: BoxDecoration(
           color: AppColors.c1,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: AppRadius.mdAll,
           border: Border.all(color: AppColors.border, width: 0.5),
         ),
         child: Row(
           children: [
             Container(
               width: 36, height: 36,
-              decoration: BoxDecoration(
-                color: iconBg,
-                borderRadius: BorderRadius.circular(12),
-              ),
+              decoration: BoxDecoration(color: iconBg, borderRadius: AppRadius.mdAll),
               child: Center(
-                child: Text(habit.emoji, style: const TextStyle(fontSize: 16)),
-              ),
+                  child: Icon(AppIcons.skill(habit.attribute),
+                      size: 18, color: AppColors.t1)),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(habit.title,
-                      style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.t1)),
+                  Text(habit.title, style: AppText.body(13, color: AppColors.t1, weight: FontWeight.w500)),
                   const SizedBox(height: 2),
-                  Text(
-                    habit.streak > 0
-                        ? '🔥 ${habit.streak} hari streak'
-                        : '⭐ Baru dimulai',
-                    style: TextStyle(fontSize: 10, color: AppColors.gold2),
+                  Row(
+                    children: [
+                      Icon(
+                        habit.streak > 0 ? Icons.local_fire_department_rounded : Icons.bolt_rounded,
+                        size: 12,
+                        color: AppColors.gold2,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        habit.streak > 0 ? '${habit.streak} hari streak' : 'Baru dimulai',
+                        style: AppText.body(11, color: AppColors.gold2),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
             Row(
               children: [
-                _habitBtn('+', AppColors.xp.withValues(alpha: 0.4), AppColors.xp,
-                    () => onAction(true)),
-                const SizedBox(width: 6),
-                _habitBtn('–', AppColors.red.withValues(alpha: 0.4), AppColors.red,
-                    () => onAction(false)),
+                _habitBtn(Icons.add_rounded, AppColors.xp, () => onAction(true)),
+                const SizedBox(width: AppSpacing.sm),
+                _habitBtn(Icons.remove_rounded, AppColors.red, () => onAction(false)),
               ],
             ),
           ],
@@ -404,22 +459,18 @@ class HabitItem extends StatelessWidget {
     );
   }
 
-  Widget _habitBtn(
-      String label, Color borderColor, Color textColor, VoidCallback onTap) {
-    return GestureDetector(
+  Widget _habitBtn(IconData icon, Color color, VoidCallback onTap) {
+    return PressableScale(
       onTap: onTap,
+      scale: 0.9,
       child: Container(
-        width: 30, height: 30,
+        width: 32, height: 32,
         decoration: BoxDecoration(
-          color: textColor.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: borderColor, width: 0.5),
+          color: color.withValues(alpha: 0.10),
+          borderRadius: AppRadius.smAll,
+          border: Border.all(color: color.withValues(alpha: 0.4), width: 0.5),
         ),
-        child: Center(
-          child: Text(label,
-              style: TextStyle(
-                  fontSize: 16, fontWeight: FontWeight.w700, color: textColor)),
-        ),
+        child: Icon(icon, size: 18, color: color),
       ),
     );
   }
@@ -437,12 +488,10 @@ class QuestCard extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.c2,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: AppRadius.sheetTop),
       builder: (ctx) {
         return Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(AppSpacing.xl),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -453,146 +502,103 @@ class QuestCard extends StatelessWidget {
                   height: 4,
                   decoration: BoxDecoration(
                     color: AppColors.t3,
-                    borderRadius: BorderRadius.circular(99),
+                    borderRadius: AppRadius.pillAll,
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               Row(
                 children: [
-                  Text(
-                    quest.isBoss ? '💀' : '📚',
-                    style: const TextStyle(fontSize: 24),
+                  Icon(
+                    quest.isBoss ? Icons.whatshot_rounded : Icons.menu_book_rounded,
+                    size: 26,
+                    color: quest.isBoss ? AppColors.red : AppColors.accent2,
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          quest.title,
-                          style: TextStyle(
-                            fontFamily: 'Cinzel',
-                            fontSize: 15,
-                            color: AppColors.gold,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        Text(quest.title, style: AppText.display(15, color: AppColors.gold)),
                         Text(
                           quest.isBoss ? 'Quest Boss Komunitas' : 'Quest Harian Komunitas',
-                          style: TextStyle(fontSize: 10, color: AppColors.t3),
+                          style: AppText.body(11, color: AppColors.t3),
                         ),
                       ],
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               if (quest.isBoss) ...[
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(AppSpacing.md),
                   decoration: BoxDecoration(
                     color: AppColors.red.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppRadius.mdAll,
                     border: Border.all(color: AppColors.red.withValues(alpha: 0.2), width: 0.5),
                   ),
                   child: Row(
                     children: [
-                      const Text('🛡️', style: TextStyle(fontSize: 18)),
-                      const SizedBox(width: 10),
+                      Icon(Icons.shield_outlined, size: 18, color: AppColors.red),
+                      const SizedBox(width: AppSpacing.sm + 2),
                       Expanded(
                         child: Text(
-                          'To complete this quest, you can only do it through the Party page.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.red,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          'Boss ini hanya bisa diselesaikan bersama lewat halaman Party.',
+                          style: AppText.body(12, color: AppColors.red, weight: FontWeight.w600),
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: AppSpacing.xl),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'HP Boss: ${quest.progress}%',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.red,
-                      ),
-                    ),
-                    Text(
-                      'Hadiah: +${quest.xpReward} XP',
-                      style: TextStyle(fontSize: 13, color: AppColors.xp, fontWeight: FontWeight.w600),
-                    ),
+                    Text('HP Boss: ${quest.progress}%',
+                        style: AppText.body(13, color: AppColors.red, weight: FontWeight.w600)),
+                    Text('Hadiah: +${quest.xpReward} XP',
+                        style: AppText.body(13, color: AppColors.xp, weight: FontWeight.w600)),
                   ],
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSpacing.xl),
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton(
                     onPressed: () => Navigator.pop(ctx),
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: AppColors.border, width: 0.5),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text(
-                      'CLOSE',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.t2),
-                    ),
+                    child: const Text('Tutup'),
                   ),
                 ),
               ] else ...[
                 Text(
-                  'Kerjakan tugas harian atau klik tombol di bawah untuk melaporkan progress quest ini.',
-                  style: TextStyle(fontSize: 12, color: AppColors.t2),
+                  'Kerjakan tugas harian atau tekan tombol di bawah untuk melaporkan progres quest ini.',
+                  style: AppText.body(12, color: AppColors.t2),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: AppSpacing.xl),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Progress: ${quest.progress}%',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.accent,
-                      ),
-                    ),
-                    Text(
-                      'Hadiah: +${quest.xpReward} XP',
-                      style: TextStyle(fontSize: 13, color: AppColors.xp, fontWeight: FontWeight.w600),
-                    ),
+                    Text('Progres: ${quest.progress}%',
+                        style: AppText.body(13, color: AppColors.accent2, weight: FontWeight.w600)),
+                    Text('Hadiah: +${quest.xpReward} XP',
+                        style: AppText.body(13, color: AppColors.xp, weight: FontWeight.w600)),
                   ],
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSpacing.xl),
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: isDone ? null : () {
-                      Navigator.pop(ctx);
-                      state.progressQuest(quest.id);
-                    },
+                  child: ElevatedButton.icon(
+                    onPressed: isDone
+                        ? null
+                        : () {
+                            Navigator.pop(ctx);
+                            state.progressQuest(quest.id);
+                          },
+                    icon: Icon(isDone ? Icons.emoji_events_rounded : Icons.bolt_rounded, size: 18),
+                    label: Text(isDone ? 'QUEST SELESAI' : 'KERJAKAN QUEST (+20%)'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: isDone ? AppColors.border : AppColors.accent,
-                      foregroundColor: Colors.white,
                       disabledBackgroundColor: AppColors.border,
                       disabledForegroundColor: AppColors.t3,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text(
-                      isDone ? '🏆 QUEST SELESAI' : '⚔️ KERJAKAN QUEST (+20%)',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                     ),
                   ),
                 ),
@@ -607,14 +613,14 @@ class QuestCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final barColor = quest.isBoss ? AppColors.red : AppColors.accent;
-    return GestureDetector(
+    return PressableScale(
       onTap: () => _showQuestActionSheet(context),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 9),
-        padding: const EdgeInsets.all(13),
+        margin: const EdgeInsets.only(bottom: AppSpacing.sm + 1),
+        padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
           color: AppColors.c1,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppRadius.lgAll,
           border: Border.all(color: AppColors.border, width: 0.5),
         ),
         child: Column(
@@ -625,38 +631,34 @@ class QuestCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(quest.title,
-                      style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.t1)),
+                      style: AppText.body(13, color: AppColors.t1, weight: FontWeight.w500)),
                 ),
+                const SizedBox(width: AppSpacing.sm),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 3),
                   decoration: BoxDecoration(
-                    color: (quest.isBoss ? AppColors.red : AppColors.xp)
-                        .withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
+                    color: (quest.isBoss ? AppColors.red : AppColors.xp).withValues(alpha: 0.12),
+                    borderRadius: AppRadius.smAll,
                   ),
                   child: Text('+${quest.xpReward} XP',
-                      style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: quest.isBoss ? AppColors.red : AppColors.xp)),
+                      style: AppText.body(10,
+                          color: quest.isBoss ? AppColors.red : AppColors.xp,
+                          weight: FontWeight.w700)),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             LayoutBuilder(
               builder: (context, c) {
                 final frac = (quest.progress / 100).clamp(0.0, 1.0);
                 return ClipRRect(
-                  borderRadius: BorderRadius.circular(99),
+                  borderRadius: AppRadius.pillAll,
                   child: Stack(
                     children: [
                       Container(
                         height: 5,
                         width: c.maxWidth,
-                        color: Colors.white.withValues(alpha: 0.07),
+                        color: AppColors.t1.withValues(alpha: 0.07),
                       ),
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 320),
@@ -667,7 +669,7 @@ class QuestCard extends StatelessWidget {
                           gradient: LinearGradient(
                             colors: [barColor.withValues(alpha: 0.5), barColor],
                           ),
-                          borderRadius: BorderRadius.circular(99),
+                          borderRadius: AppRadius.pillAll,
                         ),
                       ),
                     ],
@@ -675,16 +677,15 @@ class QuestCard extends StatelessWidget {
                 );
               },
             ),
-            const SizedBox(height: 5),
+            const SizedBox(height: AppSpacing.xs + 1),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   quest.isBoss ? '${quest.progress}% HP' : '${quest.progress}% selesai',
-                  style: TextStyle(fontSize: 10, color: AppColors.t3),
+                  style: AppText.body(10, color: AppColors.t3),
                 ),
-                Text(quest.timeLeft,
-                    style: TextStyle(fontSize: 10, color: AppColors.t3)),
+                Text(quest.timeLeft, style: AppText.body(10, color: AppColors.t3)),
               ],
             ),
           ],

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 import '../../theme/app_theme.dart';
+import '../../theme/app_icons.dart';
 import '../../widgets/common_widgets.dart';
 import '../../services/firestore_service.dart';
 
@@ -96,28 +97,25 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
       // Sort and pick top 5 users
       usersData.sort((a, b) => (b['xp'] as int).compareTo(a['xp'] as int));
       final top5 = usersData.take(5).map((u) {
-        String clsEmoji = '⚔️';
-        String clsName = u['class'] as String;
-        switch (clsName.toLowerCase()) {
-          case 'warrior':
-            clsEmoji = '⚔️ Warrior';
-            break;
+        final clsName = (u['class'] as String).toLowerCase();
+        String label;
+        switch (clsName) {
           case 'mage':
-            clsEmoji = '🧙 Mage';
+            label = 'Mage';
             break;
           case 'rogue':
-            clsEmoji = '🏹 Rogue';
+            label = 'Rogue';
             break;
           case 'healer':
-            clsEmoji = '💚 Healer';
+            label = 'Healer';
             break;
           default:
-            clsEmoji = '⚔️ Warrior';
+            label = 'Warrior';
             break;
         }
         return {
           'name': u['name'] as String,
-          'class': clsEmoji,
+          'class': label,
           'xp': '${u['xp']} XP',
           'streak': '${u['streak']}',
         };
@@ -198,18 +196,14 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
                 child: _KpiCard(
                     label: 'Task Selesai',
                     value: '$_totalTasksCompleted',
-                    change: '+18%',
-                    positive: true,
-                    emoji: '✅'),
+                    icon: AppIcons.check),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: _KpiCard(
                     label: 'Total User',
                     value: '$_totalUsersCount',
-                    change: '+4%',
-                    positive: true,
-                    emoji: '👤'),
+                    icon: AppIcons.users),
               ),
             ],
           ),
@@ -220,51 +214,16 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
                 child: _KpiCard(
                     label: 'User Aktif',
                     value: _totalUsersCount == 0 ? '0%' : '${(_activeUsersCount / _totalUsersCount * 100).toStringAsFixed(0)}%',
-                    change: '+6%',
-                    positive: true,
-                    emoji: '🔥'),
+                    icon: AppIcons.streak),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: _KpiCard(
                     label: 'Total XP',
                     value: '$_totalXpEarned',
-                    change: '+5%',
-                    positive: true,
-                    emoji: '📌'),
+                    icon: AppIcons.xp),
               ),
             ],
-          ),
-
-          // ── Task Completion Bar Chart ──────────────────────────────────
-          const SectionTitle('Task Selesai per Hari'),
-          _BarChartCard(
-            data: [
-              const _BarData(label: 'Sen', value: 0.65, count: 28),
-              const _BarData(label: 'Sel', value: 0.80, count: 35),
-              const _BarData(label: 'Rab', value: 0.55, count: 24),
-              const _BarData(label: 'Kam', value: 0.90, count: 39),
-              const _BarData(label: 'Jum', value: 1.0, count: 43),
-              const _BarData(label: 'Sab', value: 0.40, count: 17),
-              const _BarData(label: 'Min', value: 0.30, count: 13),
-            ],
-            color: AppColors.accent,
-          ),
-
-          // ── XP Earned Chart ───────────────────────────────────────────
-          const SectionTitle('XP Diperoleh per Hari'),
-          _BarChartCard(
-            data: [
-              const _BarData(label: 'Sen', value: 0.50, count: 1200),
-              const _BarData(label: 'Sel', value: 0.75, count: 1800),
-              const _BarData(label: 'Rab', value: 0.60, count: 1440),
-              const _BarData(label: 'Kam', value: 0.85, count: 2040),
-              const _BarData(label: 'Jum', value: 0.95, count: 2280),
-              const _BarData(label: 'Sab', value: 0.35, count: 840),
-              const _BarData(label: 'Min', value: 0.25, count: 600),
-            ],
-            color: AppColors.xp,
-            showXp: true,
           ),
 
           // ── Class Distribution ────────────────────────────────────────
@@ -282,19 +241,53 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
                 (e) => _TopUserTile(rank: e.key + 1, data: e.value),
               ),
 
-          // ── Reports ───────────────────────────────────────────────────
+          // ── Reports (real, dikirim user) ──────────────────────────────
           const SectionTitle('Laporan Masuk'),
-          const _ReportCard(
-            emoji: '🚩',
-            title: 'Konten tidak pantas',
-            sub: 'Dilaporkan oleh 2 user · Perlu ditinjau',
-            urgent: true,
-          ),
-          const _ReportCard(
-            emoji: '⚠️',
-            title: 'Bug: HP tidak berkurang',
-            sub: 'Dilaporkan 1x · Class Healer',
-            urgent: false,
+          StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+            stream: FirebaseFirestore.instance
+                .collection('reports')
+                .orderBy('createdAt', descending: true)
+                .snapshots(),
+            builder: (context, snap) {
+              if (snap.connectionState == ConnectionState.waiting) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+              final docs = snap.data?.docs ?? [];
+              if (docs.isEmpty) {
+                return Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 22),
+                  decoration: BoxDecoration(
+                    color: AppColors.c1.withValues(alpha: 0.45),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.border, width: 0.5),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(Icons.inbox_rounded, size: 26, color: AppColors.t3),
+                      const SizedBox(height: 8),
+                      Text('Belum ada laporan masuk',
+                          style: TextStyle(fontSize: 12, color: AppColors.t3)),
+                    ],
+                  ),
+                );
+              }
+              return Column(
+                children: docs.map((d) {
+                  final data = d.data();
+                  return _ReportCard(
+                    id: d.id,
+                    category: (data['category'] ?? 'Lainnya').toString(),
+                    message: (data['message'] ?? '').toString(),
+                    reporter: (data['reporterName'] ?? 'User').toString(),
+                    status: (data['status'] ?? 'open').toString(),
+                  );
+                }).toList(),
+              );
+            },
           ),
 
           const SizedBox(height: 24),
@@ -308,16 +301,12 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
 class _KpiCard extends StatelessWidget {
   final String label;
   final String value;
-  final String change;
-  final bool positive;
-  final String emoji;
+  final IconData icon;
 
   const _KpiCard({
     required this.label,
     required this.value,
-    required this.change,
-    required this.positive,
-    required this.emoji,
+    required this.icon,
   });
 
   @override
@@ -332,26 +321,7 @@ class _KpiCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(emoji, style: const TextStyle(fontSize: 18)),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: positive
-                      ? AppColors.xp.withValues(alpha: 0.12)
-                      : AppColors.red.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(change,
-                    style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w700,
-                        color: positive ? AppColors.xp : AppColors.red)),
-              ),
-            ],
-          ),
+          Icon(icon, size: 18, color: AppColors.accent2),
           const SizedBox(height: 8),
           Text(value,
               style: TextStyle(
@@ -363,91 +333,6 @@ class _KpiCard extends StatelessWidget {
           const SizedBox(height: 2),
           Text(label,
               style: TextStyle(fontSize: 10, color: AppColors.t3)),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Bar Data ──────────────────────────────────────────────────────────────────
-class _BarData {
-  final String label;
-  final double value; // 0.0–1.0
-  final int count;
-  const _BarData(
-      {required this.label, required this.value, required this.count});
-}
-
-// ── Bar Chart Card ────────────────────────────────────────────────────────────
-class _BarChartCard extends StatelessWidget {
-  final List<_BarData> data;
-  final Color color;
-  final bool showXp;
-
-  const _BarChartCard({
-    required this.data,
-    required this.color,
-    this.showXp = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 4),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.c2,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border, width: 0.5),
-      ),
-      child: Column(
-        children: [
-          SizedBox(
-            height: 100,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: data.map((d) {
-                return Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 3),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Text(
-                          showXp
-                              ? '${(d.count / 1000).toStringAsFixed(1)}k'
-                              : '${d.count}',
-                          style: TextStyle(
-                              fontSize: 8,
-                              color: color,
-                              fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 3),
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 400),
-                          height: 80 * d.value,
-                          decoration: BoxDecoration(
-                            color: color.withValues(alpha: 0.7),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: data.map((d) {
-              return Expanded(
-                child: Text(d.label,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 9, color: AppColors.t3)),
-              );
-            }).toList(),
-          ),
         ],
       ),
     );
@@ -471,10 +356,10 @@ class _ClassDistributionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final classes = [
-      ('⚔️', 'Warrior', warriorRatio, AppColors.accent),
-      ('🧙', 'Mage', mageRatio, const Color(0xFF185FA5)),
-      ('🏹', 'Rogue', rogueRatio, AppColors.gold),
-      ('💚', 'Healer', healerRatio, AppColors.xp),
+      (Icons.shield_rounded, 'Warrior', warriorRatio, AppColors.accent),
+      (Icons.auto_fix_high_rounded, 'Mage', mageRatio, const Color(0xFF185FA5)),
+      (Icons.gps_fixed_rounded, 'Rogue', rogueRatio, AppColors.gold),
+      (Icons.healing_rounded, 'Healer', healerRatio, AppColors.xp),
     ];
 
     return Container(
@@ -487,12 +372,12 @@ class _ClassDistributionCard extends StatelessWidget {
       ),
       child: Column(
         children: classes.map((c) {
-          final (emoji, name, ratio, color) = c;
+          final (icon, name, ratio, color) = c;
           return Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: Row(
               children: [
-                Text(emoji, style: const TextStyle(fontSize: 16)),
+                Icon(icon, size: 16, color: color),
                 const SizedBox(width: 10),
                 SizedBox(
                   width: 54,
@@ -598,8 +483,15 @@ class _TopUserTile extends StatelessWidget {
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: AppColors.xp)),
-              Text('🔥 ${data['streak']!} streak',
-                  style: TextStyle(fontSize: 9, color: AppColors.gold2)),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(AppIcons.streak, size: 10, color: AppColors.gold2),
+                  const SizedBox(width: 3),
+                  Text('${data['streak']!} streak',
+                      style: TextStyle(fontSize: 9, color: AppColors.gold2)),
+                ],
+              ),
             ],
           ),
         ],
@@ -610,21 +502,35 @@ class _TopUserTile extends StatelessWidget {
 
 // ── Report Card ───────────────────────────────────────────────────────────────
 class _ReportCard extends StatelessWidget {
-  final String emoji;
-  final String title;
-  final String sub;
-  final bool urgent;
+  final String id;
+  final String category;
+  final String message;
+  final String reporter;
+  final String status;
 
   const _ReportCard({
-    required this.emoji,
-    required this.title,
-    required this.sub,
-    required this.urgent,
+    required this.id,
+    required this.category,
+    required this.message,
+    required this.reporter,
+    required this.status,
   });
+
+  IconData get _icon {
+    switch (category.toLowerCase()) {
+      case 'bug':
+        return Icons.bug_report_rounded;
+      case 'konten':
+        return AppIcons.report;
+      default:
+        return Icons.help_outline_rounded;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final color = urgent ? AppColors.red : AppColors.gold;
+    final reviewed = status == 'reviewed';
+    final color = reviewed ? AppColors.xp : AppColors.gold;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
@@ -635,31 +541,61 @@ class _ReportCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Text(emoji, style: const TextStyle(fontSize: 20)),
+          Icon(_icon, size: 20, color: color),
           const SizedBox(width: 11),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
+                Text(message,
                     style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                         color: AppColors.t1)),
-                Text(sub,
+                const SizedBox(height: 2),
+                Text('$category · oleh $reporter',
                     style: TextStyle(fontSize: 10, color: AppColors.t3)),
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(8),
+          const SizedBox(width: 8),
+          if (!reviewed)
+            GestureDetector(
+              onTap: () => FirebaseFirestore.instance
+                  .collection('reports')
+                  .doc(id)
+                  .update({'status': 'reviewed'}),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text('Tinjau',
+                    style: TextStyle(
+                        fontSize: 9, fontWeight: FontWeight.w700, color: color)),
+              ),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.xp.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text('Selesai',
+                  style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.xp)),
             ),
-            child: Text(urgent ? 'Urgent' : 'Review',
-                style: TextStyle(
-                    fontSize: 9, fontWeight: FontWeight.w700, color: color)),
+          const SizedBox(width: 6),
+          GestureDetector(
+            onTap: () => FirebaseFirestore.instance
+                .collection('reports')
+                .doc(id)
+                .delete(),
+            child: Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.red),
           ),
         ],
       ),

@@ -1,3 +1,7 @@
+// Implementasi khusus Flutter Web (dimuat lewat conditional import). dart:html
+// dipakai sengaja untuk memutar <audio> sederhana di web; aman karena file ini
+// tidak pernah ikut ter-compile di platform native.
+// ignore_for_file: deprecated_member_use, avoid_web_libraries_in_flutter
 import 'dart:html' as html;
 
 class AudioHelper {

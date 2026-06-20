@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_icons.dart';
 import '../models/app_state.dart';
 import '../models/models.dart';
 import '../widgets/common_widgets.dart';
@@ -41,9 +42,8 @@ class TasksScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: AppColors.border, width: 0.5),
                   ),
-                  child: const Center(
-                    child: Text('🎯',
-                        style: TextStyle(fontSize: 16)),
+                  child: Center(
+                    child: Icon(AppIcons.focus, size: 18, color: AppColors.t2),
                   ),
                 ),
               ),
@@ -58,8 +58,7 @@ class TasksScreen extends StatelessWidget {
                     border: Border.all(color: AppColors.border, width: 0.5),
                   ),
                   child: Center(
-                    child: Text('＋',
-                        style: TextStyle(fontSize: 18, color: AppColors.t2)),
+                    child: Icon(Icons.add_rounded, size: 20, color: AppColors.t2),
                   ),
                 ),
               ),
@@ -70,7 +69,7 @@ class TasksScreen extends StatelessWidget {
             children: [
               const SectionTitle('Habits'),
               if (state.habits.isEmpty)
-                _emptyHint('🌀', 'Belum ada habit.', 'Tap ＋ untuk membangun kebiasaan baru.')
+                _emptyHint(Icons.track_changes_rounded, 'Belum ada habit.', 'Tap + untuk membangun kebiasaan baru.')
               else
                 ...List.generate(state.habits.length, (i) {
                   final h = state.habits[i];
@@ -84,7 +83,7 @@ class TasksScreen extends StatelessWidget {
 
               const SectionTitle('Daily Tasks'),
               if (state.dailyTasks.isEmpty)
-                _emptyHint('📅', 'Belum ada daily.', 'Tugas harian yang berulang akan muncul di sini.')
+                _emptyHint(Icons.event_repeat_rounded, 'Belum ada daily.', 'Tugas harian yang berulang akan muncul di sini.')
               else
                 ...state.dailyTasks.map((t) => TaskItem(
                       task: t,
@@ -95,7 +94,7 @@ class TasksScreen extends StatelessWidget {
 
               const SectionTitle('To-Do List'),
               if (state.todos.isEmpty)
-                _emptyHint('📝', 'To-do kosong.', 'Mantap — semua beres! Tap ＋ untuk tugas baru.')
+                _emptyHint(Icons.checklist_rtl_rounded, 'To-do kosong.', 'Mantap, semua beres! Tap + untuk tugas baru.')
               else
                 ...state.todos.map((t) => TaskItem(
                       task: t,
@@ -116,40 +115,19 @@ class TasksScreen extends StatelessWidget {
     1: 'Sen', 2: 'Sel', 3: 'Rab', 4: 'Kam', 5: 'Jum', 6: 'Sab', 7: 'Min',
   };
 
-  DateTime? _parseDeadline(String subtitle) {
-    final match = RegExp(r'Tenggat: (\d{2})-(\d{2})-(\d{4})').firstMatch(subtitle);
-    if (match != null) {
-      final day = int.parse(match.group(1)!);
-      final month = int.parse(match.group(2)!);
-      final year = int.parse(match.group(3)!);
-      return DateTime(year, month, day);
-    }
-    return null;
-  }
-
-  // Membaca hari pengulangan dari subtitle Daily, mis. "Setiap: Sen, Rab".
-  Set<int> _parseDays(String subtitle) {
-    final result = <int>{};
-    final match = RegExp(r'Setiap: ([^·]+)').firstMatch(subtitle);
-    if (match != null) {
-      for (final part in match.group(1)!.split(',').map((e) => e.trim())) {
-        _dayLabels.forEach((k, v) {
-          if (v == part) result.add(k);
-        });
-      }
-    }
-    return result;
-  }
-
   // Daily hanya aktif (bisa diselesaikan) pada hari yang dipilih.
   bool _isDailyActiveToday(TaskModel t) => t.isActiveOn(DateTime.now().weekday);
 
   String _parseDescription(String subtitle) {
-    for (final marker in const [' · Tenggat:', ' · Setiap:']) {
+    // Catatan: Daily "setiap hari" disimpan sebagai 'Setiap hari' (tanpa titik dua),
+    // jadi marker-nya harus ikut diperhitungkan agar tidak bocor ke deskripsi.
+    for (final marker in const [' · Tenggat:', ' · Setiap:', ' · Setiap hari']) {
       final idx = subtitle.indexOf(marker);
       if (idx != -1) return subtitle.substring(0, idx);
     }
-    if (subtitle.startsWith('Tenggat: ') || subtitle.startsWith('Setiap: ')) {
+    if (subtitle.startsWith('Tenggat: ') ||
+        subtitle.startsWith('Setiap: ') ||
+        subtitle == 'Setiap hari') {
       return '';
     }
     return subtitle;
@@ -270,7 +248,7 @@ class TasksScreen extends StatelessWidget {
 
     if (taskToEdit != null) {
       descCtrl.text = _parseDescription(taskToEdit.subtitle);
-      selectedDate = _parseDeadline(taskToEdit.subtitle);
+      selectedDate = taskToEdit.deadline;
     }
 
     TaskPriority priority = taskToEdit?.priority ?? TaskPriority.medium;
@@ -283,7 +261,7 @@ class TasksScreen extends StatelessWidget {
     // Untuk tipe Daily: hari pengulangan (1=Senin … 7=Minggu).
     Set<int> selectedDays = {};
     if (taskToEdit != null && taskToEdit.type == TaskType.daily) {
-      selectedDays = _parseDays(taskToEdit.subtitle);
+      selectedDays = taskToEdit.repeatDays;
     }
 
     showModalBottomSheet(
@@ -473,9 +451,9 @@ class TasksScreen extends StatelessWidget {
                         return true;
                       }).map((t) {
                         final labels = {
-                          TaskType.habit: '🌀 Habit',
-                          TaskType.daily: '📅 Daily',
-                          TaskType.todo: '📝 To-Do'
+                          TaskType.habit: 'Habit',
+                          TaskType.daily: 'Daily',
+                          TaskType.todo: 'To-Do'
                         };
                         final sel = type == t;
                         return Expanded(
@@ -531,12 +509,21 @@ class TasksScreen extends StatelessWidget {
                               width: sel ? 1 : 0.5,
                             ),
                           ),
-                          child: Text(
-                            '${attr.emoji} ${attr.name}',
-                            style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w500,
-                                color: sel ? AppColors.accent2 : AppColors.t3),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(AppIcons.skill(attr),
+                                  size: 13,
+                                  color: sel ? AppColors.accent2 : AppColors.t3),
+                              const SizedBox(width: 5),
+                              Text(
+                                attr.name,
+                                style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w500,
+                                    color: sel ? AppColors.accent2 : AppColors.t3),
+                              ),
+                            ],
                           ),
                         ),
                       );
@@ -585,7 +572,7 @@ class TasksScreen extends StatelessWidget {
                             state.addHabit(HabitModel(
                               id: DateTime.now().millisecondsSinceEpoch.toString(),
                               title: title,
-                              emoji: '⭐',
+                              emoji: '',
                               xpReward: 15,
                               attribute: attribute,
                             ));
@@ -610,7 +597,7 @@ class TasksScreen extends StatelessWidget {
                           } else if (metaStr.isNotEmpty) {
                             finalSubtitle = metaStr;
                           } else {
-                            finalSubtitle = '📝 Task baru';
+                            finalSubtitle = 'Task baru';
                           }
 
                           if (taskToEdit != null) {
@@ -690,7 +677,7 @@ class TasksScreen extends StatelessWidget {
   }
 
   // Placeholder elegan saat sebuah section kosong (anti area-melompong).
-  Widget _emptyHint(String emoji, String title, String subtitle) {
+  Widget _emptyHint(IconData icon, String title, String subtitle) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 8),
@@ -702,7 +689,7 @@ class TasksScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Opacity(opacity: 0.85, child: Text(emoji, style: const TextStyle(fontSize: 24))),
+          Icon(icon, size: 26, color: AppColors.t3),
           const SizedBox(height: 8),
           Text(title,
               style: TextStyle(

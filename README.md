@@ -41,7 +41,7 @@ Aplikasi ini dibuat sebagai proyek Tugas Besar Mata Kuliah **Aplikasi Perangkat 
 - **Quest Pribadi**: tantangan personal yang bisa di-progress secara manual
 - **Global Quest**: quest yang di-publish oleh Admin — aktif secara otomatis di semua akun pengguna
 - **Global Boss**: boss bersama yang bisa diserang oleh Party — kalahkan untuk meraih XP besar!
-- HP semua anggota party berkurang saat boss menyerang balik
+- HP penyerang berkurang saat boss menyerang balik (tiap anggota menyerang dari perangkatnya sendiri)
 
 ### 🏰 Sistem Party (Kelompok)
 - Buat party dan undang teman menggunakan UID atau email

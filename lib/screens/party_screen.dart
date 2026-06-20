@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_icons.dart';
 import '../models/app_state.dart';
 
 class PartyScreen extends StatelessWidget {
@@ -29,8 +30,8 @@ class PartyScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: AppColors.border, width: 0.5),
                 ),
-                child: const Center(
-                  child: Text('👥', style: TextStyle(fontSize: 15)),
+                child: Center(
+                  child: Icon(AppIcons.party, size: 17, color: AppColors.t2),
                 ),
               ),
             ],
@@ -59,13 +60,22 @@ class PartyScreen extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Expanded(
-                              child: Text('⚔️ ${state.partyName ?? "No Party"}',
-                                  style: TextStyle(
-                                    fontFamily: 'Cinzel',
-                                    fontSize: 14,
-                                    color: AppColors.t1,
-                                    fontWeight: FontWeight.bold,
-                                  )),
+                              child: Row(
+                                children: [
+                                  Icon(AppIcons.party, size: 15, color: AppColors.accent2),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(state.partyName ?? "No Party",
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontFamily: 'Cinzel',
+                                          fontSize: 14,
+                                          color: AppColors.t1,
+                                          fontWeight: FontWeight.bold,
+                                        )),
+                                  ),
+                                ],
+                              ),
                             ),
                             GestureDetector(
                               onTap: () => _showLeavePartyDialog(context, state),
@@ -96,11 +106,17 @@ class PartyScreen extends StatelessWidget {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text('💀 Tidak ada Boss',
-                                  style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.red)),
+                              Row(
+                                children: [
+                                  Icon(AppIcons.boss, size: 14, color: AppColors.red),
+                                  const SizedBox(width: 6),
+                                  Text('Tidak ada Boss',
+                                      style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.red)),
+                                ],
+                              ),
                               Text('0 / 2000 HP',
                                   style: TextStyle(fontSize: 10, color: AppColors.t3)),
                             ],
@@ -128,12 +144,20 @@ class PartyScreen extends StatelessWidget {
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       Expanded(
-                                        child: Text('💀 ${boss.title}',
-                                            style: TextStyle(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w600,
-                                                color: AppColors.red),
-                                            overflow: TextOverflow.ellipsis),
+                                        child: Row(
+                                          children: [
+                                            Icon(AppIcons.boss, size: 14, color: AppColors.red),
+                                            const SizedBox(width: 6),
+                                            Expanded(
+                                              child: Text(boss.title,
+                                                  style: TextStyle(
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: AppColors.red),
+                                                  overflow: TextOverflow.ellipsis),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                       const SizedBox(width: 8),
                                       Text(hpTxt,
@@ -176,7 +200,7 @@ class PartyScreen extends StatelessWidget {
                                       onPressed: () {
                                         state.attackGlobalBoss(boss.id);
                                       },
-                                      icon: const Text('💥', style: TextStyle(fontSize: 14)),
+                                      icon: const Icon(AppIcons.attack, size: 16),
                                       label: const Text(
                                         'SERANG BOSS (-10% HP)',
                                         style: TextStyle(
@@ -196,7 +220,7 @@ class PartyScreen extends StatelessWidget {
                                 ],
                               ),
                             );
-                          }).toList(),
+                          }),
                         ],
 
                         // Members
@@ -239,8 +263,8 @@ class PartyScreen extends StatelessWidget {
                                       shape: BoxShape.circle,
                                     ),
                                     child: Center(
-                                      child: Text(m.emoji,
-                                          style: const TextStyle(fontSize: 11)),
+                                      child: Icon(AppIcons.heroClass(m.heroClass),
+                                          size: 12, color: Colors.white),
                                     ),
                                   ),
                                   const SizedBox(width: 5),
@@ -257,7 +281,7 @@ class PartyScreen extends StatelessWidget {
                                           color: AppColors.red.withValues(alpha: 0.2),
                                           shape: BoxShape.circle,
                                         ),
-                                        child: const Text('❌', style: TextStyle(fontSize: 8)),
+                                        child: Icon(Icons.close_rounded, size: 11, color: AppColors.red),
                                       ),
                                     ),
                                   ],
@@ -280,13 +304,13 @@ class PartyScreen extends StatelessWidget {
                 String rankLabel;
                 if (rank == 1) {
                   rankColor = AppColors.gold;
-                  rankLabel = '🥇';
+                  rankLabel = '$rank';
                 } else if (rank == 2) {
                   rankColor = const Color(0xFFB4B2A9);
-                  rankLabel = '🥈';
+                  rankLabel = '$rank';
                 } else if (rank == 3) {
                   rankColor = const Color(0xFFEF9F27);
-                  rankLabel = '🥉';
+                  rankLabel = '$rank';
                 } else {
                   rankColor = AppColors.t3;
                   rankLabel = '$rank';
@@ -318,14 +342,16 @@ class PartyScreen extends StatelessWidget {
                     children: [
                       SizedBox(
                         width: 26,
-                        child: Text(rankLabel,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontFamily: 'Cinzel',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: rankColor,
-                            )),
+                        child: rank <= 3
+                            ? Icon(AppIcons.trophy, size: 18, color: rankColor)
+                            : Text(rankLabel,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontFamily: 'Cinzel',
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: rankColor,
+                                )),
                       ),
                       const SizedBox(width: 10),
                       Container(
@@ -335,8 +361,8 @@ class PartyScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Center(
-                          child: Text(m.emoji,
-                              style: const TextStyle(fontSize: 18)),
+                          child: Icon(AppIcons.heroClass(m.heroClass),
+                              size: 18, color: m.avatarColor),
                         ),
                       ),
                       const SizedBox(width: 11),
@@ -350,10 +376,18 @@ class PartyScreen extends StatelessWidget {
                                     fontWeight: FontWeight.w500,
                                     color: AppColors.t1)),
                             const SizedBox(height: 2),
-                            Text(
-                              'Lv.${m.level} · ${m.className} · 🔥 ${m.streak} streak',
-                              style: TextStyle(
-                                  fontSize: 10, color: AppColors.t3),
+                            Row(
+                              children: [
+                                Text(
+                                  'Lv.${m.level} · ${m.className} · ',
+                                  style: TextStyle(fontSize: 10, color: AppColors.t3),
+                                ),
+                                Icon(AppIcons.streak, size: 10, color: AppColors.warning),
+                                Text(
+                                  ' ${m.streak}',
+                                  style: TextStyle(fontSize: 10, color: AppColors.t3),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -378,7 +412,7 @@ class PartyScreen extends StatelessWidget {
   }
 
   Widget _buildNoPartyWidget(BuildContext context, AppState state) {
-    final nameCtrl = TextEditingController(text: 'Kelompok 6 — IF-A');
+    final nameCtrl = TextEditingController(text: 'Kelompok 6 - IF-A');
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -398,7 +432,7 @@ class PartyScreen extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  const Text('🏰', style: TextStyle(fontSize: 20)),
+                  Icon(Icons.castle_rounded, size: 22, color: AppColors.gold),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -458,13 +492,19 @@ class PartyScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('🏰 Buat Kelompok Petualangmu',
-                  style: TextStyle(
-                    fontFamily: 'Cinzel',
-                    fontSize: 13,
-                    color: AppColors.t1,
-                    fontWeight: FontWeight.bold,
-                  )),
+              Row(
+                children: [
+                  Icon(Icons.castle_rounded, size: 15, color: AppColors.gold),
+                  const SizedBox(width: 6),
+                  Text('Buat Kelompok Petualangmu',
+                      style: TextStyle(
+                        fontFamily: 'Cinzel',
+                        fontSize: 13,
+                        color: AppColors.t1,
+                        fontWeight: FontWeight.bold,
+                      )),
+                ],
+              ),
               const SizedBox(height: 4),
               Text('Undang teman-temanmu untuk menyelesaikan Boss dan Quest bersama!',
                   style: TextStyle(fontSize: 10, color: AppColors.t3)),
@@ -668,7 +708,7 @@ class PartyScreen extends StatelessWidget {
                                   color: u.avatarColor.withValues(alpha: 0.2),
                                   shape: BoxShape.circle,
                                 ),
-                                child: Center(child: Text(u.emoji, style: const TextStyle(fontSize: 14))),
+                                child: Center(child: Icon(AppIcons.heroClass(u.heroClass), size: 15, color: u.avatarColor)),
                               ),
                               const SizedBox(width: 12),
                               Expanded(

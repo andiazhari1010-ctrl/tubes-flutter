@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_icons.dart';
 import '../models/app_state.dart';
 import 'auth_wrapper.dart';
 
@@ -21,16 +22,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _isMusicOn = true;
   bool _isSfxOn = true;
   bool _isDarkMode = true;
-  String _selectedAvatar = '🧙';
-  
-  final List<String> _avatars = ['⚔️', '🧙', '💚', '🏹', '🛡️', '👑', '🔥', '🌟'];
 
   @override
   void initState() {
     super.initState();
     final state = Provider.of<AppState>(context, listen: false);
     _nameCtrl.text = state.hero.name;
-    _selectedAvatar = state.hero.classEmoji;
     _usernameCtrl.text = state.username;
     _fullNameCtrl.text = state.fullName;
     _phoneCtrl.text = state.phone;
@@ -58,13 +55,102 @@ class _SettingsScreenState extends State<SettingsScreen> {
       newFullName: _fullNameCtrl.text.trim(),
       newPhone: _phoneCtrl.text.trim(),
     );
-    state.addNotification("👤 Profile Updated Successfully!");
+    state.addNotification("Profil berhasil diperbarui!");
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Text('Profil berhasil diperbarui!'),
         backgroundColor: AppColors.accent,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
+  void _showReportForm(BuildContext context, AppState state) {
+    final msgCtrl = TextEditingController();
+    String category = 'Bug';
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.c2,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => Padding(
+          padding: EdgeInsets.only(
+              left: 20, right: 20, top: 20,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 36),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                  child: Container(
+                      width: 36, height: 4,
+                      decoration: BoxDecoration(
+                          color: AppColors.t3,
+                          borderRadius: BorderRadius.circular(99)))),
+              const SizedBox(height: 16),
+              Text('Laporkan Masalah',
+                  style: TextStyle(fontFamily: 'Cinzel', fontSize: 16, color: AppColors.gold)),
+              const SizedBox(height: 16),
+              Text('Kategori', style: TextStyle(fontSize: 11, color: AppColors.t3)),
+              const SizedBox(height: 8),
+              Row(
+                children: ['Bug', 'Konten', 'Lainnya'].map((c) {
+                  final sel = category == c;
+                  return Expanded(
+                    child: GestureDetector(
+                      onTap: () => setLocal(() => category = c),
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 8),
+                        padding: const EdgeInsets.symmetric(vertical: 9),
+                        decoration: BoxDecoration(
+                          color: sel ? AppColors.accent.withValues(alpha: 0.15) : AppColors.c1,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: sel ? AppColors.accent : AppColors.border, width: sel ? 1 : 0.5),
+                        ),
+                        child: Text(c,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: sel ? AppColors.accent2 : AppColors.t3)),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: msgCtrl,
+                maxLines: 4,
+                style: TextStyle(fontSize: 13, color: AppColors.t1),
+                decoration: InputDecoration(
+                  hintText: 'Jelaskan masalah / keluhanmu...',
+                  hintStyle: TextStyle(color: AppColors.t3),
+                  filled: true,
+                  fillColor: AppColors.c1,
+                  contentPadding: const EdgeInsets.all(14),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.border, width: 0.5)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.accent, width: 1)),
+                ),
+              ),
+              const SizedBox(height: 18),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.accent, foregroundColor: Colors.white),
+                  onPressed: () {
+                    final msg = msgCtrl.text.trim();
+                    if (msg.isEmpty) return;
+                    state.submitReport(category, msg);
+                    Navigator.pop(ctx);
+                  },
+                  child: const Text('Kirim Laporan', style: TextStyle(fontWeight: FontWeight.w700)),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -131,47 +217,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Avatar Selection Row
-                Text(
-                  'Pilih Avatar / Simbol:',
-                  style: TextStyle(fontSize: 10, color: AppColors.t3, fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  height: 48,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _avatars.length,
-                    itemBuilder: (ctx, index) {
-                      final av = _avatars[index];
-                      final isSelected = _selectedAvatar == av;
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _selectedAvatar = av;
-                          });
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          margin: const EdgeInsets.only(right: 10),
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: isSelected ? AppColors.accent.withValues(alpha: 0.2) : AppColors.c3,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: isSelected ? AppColors.accent : AppColors.border,
-                              width: isSelected ? 1.5 : 0.5,
-                            ),
-                          ),
-                          child: Center(child: Text(av, style: const TextStyle(fontSize: 22))),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 20),
-
                 // Name Input
                 Text(
                   'Nama Hero:',
@@ -202,7 +247,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                 // Divider
                 Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                   child: Divider(color: AppColors.border, thickness: 0.5),
                 ),
 
@@ -373,7 +418,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     setState(() {
                       _isDarkMode = val;
                     });
-                    state.addNotification(val ? "🌌 Dark Mode Enabled" : "☀️ Light Mode Enabled");
+                    state.addNotification(val ? "Dark Mode aktif" : "Light Mode aktif");
                   },
                 ),
               ],
@@ -401,7 +446,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     setState(() {
                       _isMusicOn = val;
                     });
-                    state.addNotification(val ? "🎵 Music Track Enabled" : "🔇 Music Track Muted");
+                    state.addNotification(val ? "Musik diaktifkan" : "Musik dimatikan");
                   },
                 ),
                 Divider(height: 1, color: AppColors.border),
@@ -414,7 +459,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     setState(() {
                       _isSfxOn = val;
                     });
-                    state.addNotification(val ? "🔊 SFX Enabled" : "🔇 SFX Muted");
+                    state.addNotification(val ? "SFX diaktifkan" : "SFX dimatikan");
                   },
                 ),
               ],
@@ -443,6 +488,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 12),
                 _buildGlossaryItem('MM (Momentum)', 'Semangat/fokus kamu (0-100). Momentum tinggi memberikan bonus XP dan Gold saat kamu menyelesaikan Task.'),
               ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // ── Bantuan / Lapor ────────────────────────────────────────
+          _sectionHeader('BANTUAN'),
+          GestureDetector(
+            onTap: () => _showReportForm(context, state),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.c2,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppColors.border, width: 0.5),
+              ),
+              child: Row(
+                children: [
+                  Icon(AppIcons.report, size: 20, color: AppColors.gold),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Laporkan Masalah',
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.t1)),
+                        const SizedBox(height: 2),
+                        Text('Kirim bug atau keluhan langsung ke admin.',
+                            style: TextStyle(fontSize: 10, color: AppColors.t3)),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.chevron_right_rounded, size: 18, color: AppColors.t3),
+                ],
+              ),
             ),
           ),
 

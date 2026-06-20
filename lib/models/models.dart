@@ -15,14 +15,6 @@ extension SkillAttributeExtension on SkillAttribute {
     }
   }
 
-  String get emoji {
-    switch (this) {
-      case SkillAttribute.intelligence: return '🧠';
-      case SkillAttribute.strength: return '💪';
-      case SkillAttribute.creativity: return '🎨';
-    }
-  }
-
   // Deskripsi singkat per atribut (dipakai di layar Statistics).
   String get description {
     switch (this) {
@@ -100,15 +92,6 @@ class HeroModel {
     }
   }
 
-  String get classEmoji {
-    switch (heroClass) {
-      case HeroClass.warrior: return '⚔️';
-      case HeroClass.mage: return '🧙';
-      case HeroClass.healer: return '💚';
-      case HeroClass.rogue: return '🏹';
-    }
-  }
-
   Map<String, dynamic> toMap() {
     return {
       'name': name,
@@ -140,9 +123,9 @@ class HeroModel {
       parsedClass = HeroClass.values.firstWhere((e) => e.name == map['heroClass']);
     } catch (_) {}
 
-    final maxHpVal = 150;
+    const maxHpVal = 150;
     final hpVal = ((map['hp'] ?? 150) as num).toInt().clamp(0, maxHpVal);
-    final maxMpVal = 100;
+    const maxMpVal = 100;
     final mpVal = ((map['mp'] ?? 100) as num).toInt().clamp(0, maxMpVal);
 
     return HeroModel(
@@ -180,6 +163,17 @@ class TaskModel {
   TaskPriority priority;
   TaskType type;
   SkillAttribute attribute; // Skill Attribute System
+  // XP/Gold yang benar-benar diberikan saat task ini diselesaikan (sudah
+  // termasuk bonus momentum). Disimpan agar pembatalan ceklis mengembalikan
+  // nilai yang sama persis, bukan dihitung ulang dengan multiplier momentum
+  // yang mungkin sudah berubah.
+  int grantedXp;
+  int grantedGold;
+  // Pelacakan progres Quest yang disumbang task ini. Disimpan agar saat ceklis
+  // dibatalkan, +20% (dan efek penyelesaian quest) bisa dikembalikan PERSIS —
+  // mencegah exploit "farming" lewat ceklis-batal berulang.
+  String? grantedQuestId;
+  bool grantedQuestCompleted;
 
   TaskModel({
     required this.id,
@@ -191,6 +185,10 @@ class TaskModel {
     this.priority = TaskPriority.medium,
     this.type = TaskType.todo,
     this.attribute = SkillAttribute.intelligence,
+    this.grantedXp = 0,
+    this.grantedGold = 0,
+    this.grantedQuestId,
+    this.grantedQuestCompleted = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -204,6 +202,10 @@ class TaskModel {
       'priority': priority.name,
       'type': type.name,
       'attribute': attribute.name,
+      'grantedXp': grantedXp,
+      'grantedGold': grantedGold,
+      'grantedQuestId': grantedQuestId,
+      'grantedQuestCompleted': grantedQuestCompleted,
     };
   }
 
@@ -226,6 +228,25 @@ class TaskModel {
   bool isActiveOn(int weekday) {
     final days = repeatDays;
     return days.isEmpty || days.contains(weekday);
+  }
+
+  // Tenggat To-Do, di-encode di subtitle ("Tenggat: dd-MM-yyyy"). null = tanpa tenggat.
+  DateTime? get deadline {
+    final m = RegExp(r'Tenggat: (\d{2})-(\d{2})-(\d{4})').firstMatch(subtitle);
+    if (m == null) return null;
+    return DateTime(
+      int.parse(m.group(3)!),
+      int.parse(m.group(2)!),
+      int.parse(m.group(1)!),
+    );
+  }
+
+  // Apakah To-Do ini jatuh tempo hari ini?
+  bool get isDueToday {
+    final d = deadline;
+    if (d == null) return false;
+    final now = DateTime.now();
+    return d.year == now.year && d.month == now.month && d.day == now.day;
   }
 
   factory TaskModel.fromMap(Map<String, dynamic> map) {
@@ -251,6 +272,10 @@ class TaskModel {
       priority: priorityVal,
       type: typeVal,
       attribute: attrVal,
+      grantedXp: ((map['grantedXp'] ?? 0) as num).toInt(),
+      grantedGold: ((map['grantedGold'] ?? 0) as num).toInt(),
+      grantedQuestId: map['grantedQuestId'] as String?,
+      grantedQuestCompleted: map['grantedQuestCompleted'] ?? false,
     );
   }
 }
@@ -291,7 +316,7 @@ class HabitModel {
     return HabitModel(
       id: map['id'] ?? '',
       title: map['title'] ?? '',
-      emoji: map['emoji'] ?? '⭐',
+      emoji: map['emoji'] ?? '',
       streak: map['streak'] ?? 0,
       xpReward: map['xpReward'] ?? 15,
       attribute: attrVal,
@@ -342,7 +367,6 @@ class QuestModel {
 class PartyMember {
   final String uid;
   final String name;
-  final String emoji;
   final HeroClass heroClass;
   final int level;
   final int xp;
@@ -352,7 +376,6 @@ class PartyMember {
   const PartyMember({
     required this.uid,
     required this.name,
-    required this.emoji,
     required this.heroClass,
     required this.level,
     required this.xp,
@@ -441,7 +464,7 @@ class ShopItem {
       id: docId,
       name: map['name'] ?? '',
       description: map['description'] ?? '',
-      emoji: map['emoji'] ?? '🛡️',
+      emoji: map['emoji'] ?? '',
       price: (map['price'] ?? 0) as int,
       category: catVal,
       rarity: rarVal,

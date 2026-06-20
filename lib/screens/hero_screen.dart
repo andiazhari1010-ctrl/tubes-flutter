@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_icons.dart';
 import '../models/app_state.dart';
 import '../models/models.dart';
 import '../widgets/common_widgets.dart';
@@ -11,10 +12,10 @@ class HeroScreen extends StatelessWidget {
   const HeroScreen({super.key});
 
   static const _classes = [
-    (HeroClass.warrior, '⚔️', 'Warrior', '+20% HP bonus. Tahan tugas berat.'),
-    (HeroClass.mage, '🧙', 'Mage', '+20% XP bonus. Damage boss lebih.'),
-    (HeroClass.healer, '💚', 'Healer', 'HP regen. Buff anggota party.'),
-    (HeroClass.rogue, '🏹', 'Rogue', '+25% Gold. Critical hit chance.'),
+    (HeroClass.warrior, 'Warrior', '+20% HP bonus. Tahan tugas berat.'),
+    (HeroClass.mage, 'Mage', '+20% XP bonus. Damage boss lebih.'),
+    (HeroClass.healer, 'Healer', 'HP regen. Buff anggota party.'),
+    (HeroClass.rogue, 'Rogue', '+25% Gold. Critical hit chance.'),
   ];
 
   @override
@@ -86,7 +87,8 @@ class HeroScreen extends StatelessWidget {
                             ],
                           ),
                           child: Center(
-                            child: Text(hero.classEmoji, style: const TextStyle(fontSize: 44)),
+                            child: Icon(AppIcons.heroClass(hero.heroClass),
+                                size: 44, color: AppColors.accent2),
                           ),
                         ),
                         Positioned(
@@ -134,14 +136,14 @@ class HeroScreen extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        _statChip('🪙', '${hero.gold}', 'Gold',
+                        _statChip(AppIcons.gold, '${hero.gold}', 'Gold',
                             AppColors.gold),
                         const SizedBox(width: 24),
                         _statChip(
-                            '💎', '${hero.gems}', 'Gems', AppColors.accent2),
+                            AppIcons.gems, '${hero.gems}', 'Gems', AppColors.accent2),
                         const SizedBox(width: 24),
-                        _statChip('🔥', '${hero.streak}', 'Streak',
-                            AppColors.gold),
+                        _statChip(AppIcons.streak, '${hero.streak}', 'Streak',
+                            AppColors.warning),
                       ],
                     ),
                   ],
@@ -181,7 +183,7 @@ class HeroScreen extends StatelessWidget {
                   child: Row(
                     children: [
                       Icon(Icons.bar_chart_rounded, color: AppColors.accent, size: 20),
-                      SizedBox(width: 12),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -196,7 +198,7 @@ class HeroScreen extends StatelessWidget {
                                 letterSpacing: 0.5,
                               ),
                             ),
-                            SizedBox(height: 2),
+                            const SizedBox(height: 2),
                             Text(
                               'Lihat ringkasan progress & level atribut',
                               style: TextStyle(fontSize: 9, color: AppColors.t3),
@@ -220,7 +222,7 @@ class HeroScreen extends StatelessWidget {
                 mainAxisSpacing: 10,
                 childAspectRatio: 1.4,
                 children: _classes.map((c) {
-                  final (cls, emoji, name, desc) = c;
+                  final (cls, name, desc) = c;
                   final sel = hero.heroClass == cls;
                   return GestureDetector(
                     onTap: () {
@@ -252,8 +254,9 @@ class HeroScreen extends StatelessWidget {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(emoji,
-                              style: const TextStyle(fontSize: 28)),
+                          Icon(AppIcons.heroClass(cls),
+                              size: 28,
+                              color: sel ? AppColors.accent2 : AppColors.t2),
                           const SizedBox(height: 6),
                           Text(name,
                               style: TextStyle(
@@ -289,8 +292,8 @@ class HeroScreen extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      Text(item.emoji,
-                          style: const TextStyle(fontSize: 24)),
+                      Icon(AppIcons.itemCategory(item.category),
+                          size: 22, color: item.rarityColor),
                       const SizedBox(width: 11),
                       Expanded(
                         child: Column(
@@ -354,15 +357,24 @@ class HeroScreen extends StatelessWidget {
                               width: 0.5,
                             ),
                           ),
-                          child: Text(
-                            item.owned ? '✓ Dimiliki' : '🪙 ${item.price}',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: item.owned
-                                  ? AppColors.t3
-                                  : AppColors.gold,
-                            ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                item.owned ? Icons.check_rounded : AppIcons.gold,
+                                size: 12,
+                                color: item.owned ? AppColors.t3 : AppColors.gold,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                item.owned ? 'Dimiliki' : '${item.price}',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: item.owned ? AppColors.t3 : AppColors.gold,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -379,10 +391,10 @@ class HeroScreen extends StatelessWidget {
     );
   }
 
-  Widget _statChip(String icon, String value, String label, Color valueColor) {
+  Widget _statChip(IconData icon, String value, String label, Color valueColor) {
     return Column(
       children: [
-        Text(icon, style: const TextStyle(fontSize: 16)),
+        Icon(icon, size: 18, color: valueColor),
         const SizedBox(height: 4),
         Text(value,
             style: TextStyle(

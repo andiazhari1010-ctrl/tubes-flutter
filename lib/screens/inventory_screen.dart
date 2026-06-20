@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_icons.dart';
 import '../models/app_state.dart';
 import '../models/models.dart';
 
@@ -41,9 +42,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
             title: const Text('INVENTORY'),
             centerTitle: true,
             actions: [
-              IconButton(
-                onPressed: () {},
-                icon: const Text('🎒', style: TextStyle(fontSize: 20)),
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Icon(Icons.backpack_rounded, size: 22, color: AppColors.t2),
               ),
             ],
           ),
@@ -124,13 +125,13 @@ class _InventoryScreenState extends State<InventoryScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text('📭', style: TextStyle(fontSize: 64)),
-          SizedBox(height: 16),
+          Icon(Icons.inbox_rounded, size: 64, color: AppColors.t3),
+          const SizedBox(height: 16),
           Text(
             'Inventory is empty',
             style: TextStyle(fontSize: 16, color: AppColors.t1, fontWeight: FontWeight.bold),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
             'Gunakan gold-mu di shop untuk\nmencari gear hebat!',
             textAlign: TextAlign.center,
@@ -149,7 +150,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: AppColors.c1,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          borderRadius: AppRadius.sheetTop,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -162,7 +163,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                 border: Border.all(color: AppColors.border, width: 1),
               ),
               child: Center(
-                child: Text(item.emoji, style: const TextStyle(fontSize: 40)),
+                child: Icon(AppIcons.itemCategory(item.category), size: 40, color: item.rarityColor),
               ),
             ),
             const SizedBox(height: 16),
@@ -292,7 +293,7 @@ class _InventoryItemCard extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(item.emoji, style: const TextStyle(fontSize: 32)),
+                  Icon(AppIcons.itemCategory(item.category), size: 32, color: item.rarityColor),
                   const SizedBox(height: 8),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),

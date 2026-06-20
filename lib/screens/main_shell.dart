@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_icons.dart';
 import '../models/app_state.dart';
 import 'home_screen.dart';
 import 'tasks_screen.dart';
@@ -100,7 +101,7 @@ class _MainShellState extends State<MainShell> {
           ),
           bottomNavigationBar: Container(
             decoration: BoxDecoration(
-              color: Color(0xF50D0D1A),
+              color: const Color(0xF50D0D1A),
               border: Border(
                 top: BorderSide(color: AppColors.border, width: 0.5),
               ),
@@ -121,31 +122,31 @@ class _MainShellState extends State<MainShell> {
                 BottomNavigationBarItem(
                     icon: Padding(
                       padding: EdgeInsets.only(bottom: 2),
-                      child: Text('🏠', style: TextStyle(fontSize: 20)),
+                      child: Icon(AppIcons.home, size: 22),
                     ),
                     label: 'HOME'),
                 BottomNavigationBarItem(
                     icon: Padding(
                       padding: EdgeInsets.only(bottom: 2),
-                      child: Text('📋', style: TextStyle(fontSize: 20)),
+                      child: Icon(AppIcons.tasks, size: 22),
                     ),
                     label: 'TASKS'),
                 BottomNavigationBarItem(
                     icon: Padding(
                       padding: EdgeInsets.only(bottom: 2),
-                      child: Text('🎒', style: TextStyle(fontSize: 20)),
+                      child: Icon(AppIcons.inventory, size: 22),
                     ),
                     label: 'INVENTORY'),
                 BottomNavigationBarItem(
                     icon: Padding(
                       padding: EdgeInsets.only(bottom: 2),
-                      child: Text('⚔️', style: TextStyle(fontSize: 20)),
+                      child: Icon(AppIcons.party, size: 22),
                     ),
                     label: 'PARTY'),
                 BottomNavigationBarItem(
                     icon: Padding(
                       padding: EdgeInsets.only(bottom: 2),
-                      child: Text('🧙', style: TextStyle(fontSize: 20)),
+                      child: Icon(AppIcons.hero, size: 22),
                     ),
                     label: 'HERO'),
               ],

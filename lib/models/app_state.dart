@@ -10,12 +10,15 @@ import 'dart:async';
 class AppState extends ChangeNotifier {
   // Real-time stream subscriptions
   StreamSubscription<DocumentSnapshot>? _currentUserSubscription;
-  StreamSubscription<QuerySnapshot>? _usersSubscription;
+  StreamSubscription<QuerySnapshot>? _publicProfilesSubscription;
   StreamSubscription<DocumentSnapshot>? _partySubscription;
   StreamSubscription<QuerySnapshot>? _invitesSubscription;
   StreamSubscription<QuerySnapshot>? _globalQuestsSubscription;
   StreamSubscription<QuerySnapshot>? _globalBossesSubscription;
   StreamSubscription<QuerySnapshot>? _shopItemsSubscription;
+  StreamSubscription<QuerySnapshot>? _broadcastsSubscription;
+  // Agar broadcast lama tidak muncul lagi sebagai notifikasi tiap login.
+  bool _broadcastsInit = false;
 
   // Party state fields
   String? partyId;
@@ -162,12 +165,58 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  // Admin: kirim pengumuman ke semua user. Tertulis ke koleksi 'broadcasts';
+  // setiap perangkat yang online menampilkannya sebagai notifikasi real-time.
+  void sendBroadcast(String message) {
+    FirebaseFirestore.instance.collection('broadcasts').add({
+      'message': message,
+      'by': fullName.isNotEmpty ? fullName : 'Admin',
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  // User: kirim laporan/keluhan ke admin (collection 'reports'). Admin membaca
+  // & menindaklanjuti di panel Statistik → Laporan Masuk.
+  Future<void> submitReport(String category, String message) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    try {
+      await FirebaseFirestore.instance.collection('reports').add({
+        'uid': user.uid,
+        'reporterName': fullName.isNotEmpty
+            ? fullName
+            : (username.isNotEmpty ? username : 'User'),
+        'category': category,
+        'message': message,
+        'status': 'open',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      addNotification('Laporan terkirim ke admin. Terima kasih!');
+    } catch (e) {
+      addNotification('Gagal mengirim laporan: $e');
+    }
+  }
+
   // In-app notifications
   List<String> notifications = [];
   List<String> notificationHistory = [];
   bool hasUnreadNotifications = false;
   bool hasClaimedDaily = false;
+  // Tanggal (yyyy-MM-dd) terakhir Daily di-reset. null = belum pernah.
+  String? lastDailyReset;
+  // Tanggal (yyyy-MM-dd) terakhir hadiah harian di-klaim. Dipakai untuk
+  // menentukan apakah streak berlanjut (klaim kemarin) atau mulai dari 1.
+  String? lastClaimDate;
   List<String> completedGlobalQuests = [];
+  // Boss yang BENAR-BENAR diserang user ini (per-perangkat). XP boss hanya
+  // diberikan ke peserta — bukan ke siapa pun yang kebetulan online saat boss
+  // mati. Disimpan agar tahan restart. Lihat [attackGlobalBoss] & listener boss.
+  List<String> attackedBosses = [];
+  // Inventory milik user ini (per-akun). Dulu status owned/equipped menempel di
+  // koleksi GLOBAL shop_items (dibagi semua user & tidak ikut tersimpan) →
+  // pembelian hilang saat restart. Kini disimpan di dokumen user.
+  List<String> ownedItemIds = [];
+  List<String> equippedItemIds = [];
 
   bool _isDarkMode = true;
   bool _isMusicOn = true;
@@ -187,8 +236,8 @@ class AppState extends ChangeNotifier {
         // Reset state on logout
         _currentUserSubscription?.cancel();
         _currentUserSubscription = null;
-        _usersSubscription?.cancel();
-        _usersSubscription = null;
+        _publicProfilesSubscription?.cancel();
+        _publicProfilesSubscription = null;
         _partySubscription?.cancel();
         _partySubscription = null;
         _invitesSubscription?.cancel();
@@ -199,6 +248,9 @@ class AppState extends ChangeNotifier {
         _globalBossesSubscription = null;
         _shopItemsSubscription?.cancel();
         _shopItemsSubscription = null;
+        _broadcastsSubscription?.cancel();
+        _broadcastsSubscription = null;
+        _broadcastsInit = false;
 
         partyId = null;
         partyName = null;
@@ -238,6 +290,12 @@ class AppState extends ChangeNotifier {
         todos = [];
         quests = [];
         hasClaimedDaily = false;
+        lastDailyReset = null;
+        lastClaimDate = null;
+        completedGlobalQuests = [];
+        attackedBosses = [];
+        ownedItemIds = [];
+        equippedItemIds = [];
         notifyListeners();
       }
     });
@@ -333,11 +391,40 @@ class AppState extends ChangeNotifier {
         'todos': todos.map((t) => t.toMap()).toList(),
         'quests': quests.map((q) => q.toMap()).toList(),
         'hasClaimedDaily': hasClaimedDaily,
+        'lastDailyReset': lastDailyReset,
+        'lastClaimDate': lastClaimDate,
         'completedGlobalQuests': completedGlobalQuests,
+        'attackedBosses': attackedBosses,
+        'ownedItemIds': ownedItemIds,
+        'equippedItemIds': equippedItemIds,
         'partyId': partyId ?? FieldValue.delete(),
       }, SetOptions(merge: true));
     } catch (e) {
       debugPrint("Error saving to Firestore: $e");
+    }
+  }
+
+  // Cermin publik dari profil + stat hero untuk leaderboard & party. Sengaja
+  // TANPA email/telepon. Merupakan proyeksi dari dokumen user; ditulis ulang
+  // setiap dokumen user berubah agar selalu sinkron.
+  Future<void> _savePublicProfile() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    try {
+      await FirebaseFirestore.instance
+          .collection('public_profiles')
+          .doc(user.uid)
+          .set({
+        'fullName': fullName,
+        'username': username,
+        'heroClass': hero.heroClass.name,
+        'level': hero.level,
+        // XP total lintas level agar urutan leaderboard benar.
+        'xp': (hero.level - 1) * 100 + hero.xp,
+        'streak': hero.streak,
+      });
+    } catch (e) {
+      debugPrint("Error saving public profile: $e");
     }
   }
 
@@ -346,12 +433,14 @@ class AppState extends ChangeNotifier {
     if (user == null) return;
 
     _currentUserSubscription?.cancel();
-    _usersSubscription?.cancel();
+    _publicProfilesSubscription?.cancel();
     _partySubscription?.cancel();
     _invitesSubscription?.cancel();
     _globalQuestsSubscription?.cancel();
     _globalBossesSubscription?.cancel();
     _shopItemsSubscription?.cancel();
+    _broadcastsSubscription?.cancel();
+    _broadcastsInit = false;
 
     // 1. Subscribe to the current user's document
     _currentUserSubscription = FirebaseFirestore.instance
@@ -365,7 +454,7 @@ class AppState extends ChangeNotifier {
           final isBanned = (data['isBanned'] ?? false) as bool;
           if (isBanned) {
             FirebaseAuth.instance.signOut();
-            addNotification("🚫 Akun Anda diblokir oleh admin!");
+            addNotification("Akun Anda diblokir oleh admin!");
             return;
           }
 
@@ -382,6 +471,7 @@ class AppState extends ChangeNotifier {
           if (data['hero'] != null) {
             hero = HeroModel.fromMap(Map<String, dynamic>.from(data['hero']));
             _checkLevelUp();
+            _migrateLegacySkills();
           }
           if (data['habits'] != null) {
             habits = (data['habits'] as List)
@@ -410,12 +500,26 @@ class AppState extends ChangeNotifier {
             ];
           }
           hasClaimedDaily = data['hasClaimedDaily'] ?? false;
+          lastDailyReset = data['lastDailyReset'] as String?;
+          lastClaimDate = data['lastClaimDate'] as String?;
           if (data['completedGlobalQuests'] != null) {
             completedGlobalQuests = List<String>.from(data['completedGlobalQuests']);
           } else {
             completedGlobalQuests = [];
           }
+          attackedBosses = data['attackedBosses'] != null
+              ? List<String>.from(data['attackedBosses'])
+              : [];
+          ownedItemIds = data['ownedItemIds'] != null
+              ? List<String>.from(data['ownedItemIds'])
+              : [];
+          equippedItemIds = data['equippedItemIds'] != null
+              ? List<String>.from(data['equippedItemIds'])
+              : [];
+          _applyInventoryToShopItems();
+          _maybeResetDailies();
           _syncGlobalQuestsToUser();
+          _savePublicProfile();
           notifyListeners();
         }
       } else {
@@ -429,54 +533,45 @@ class AppState extends ChangeNotifier {
       debugPrint("Error loading user doc: $e");
     });
 
-    // 2. Subscribe to the users collection to construct partyMembers/leaderboard dynamically
-    _usersSubscription = FirebaseFirestore.instance
-        .collection('users')
+    // 2. Subscribe to public profiles for the leaderboard & party list.
+    //    Hanya berisi nama + stat hero (tanpa email/telepon), jadi aman dibaca
+    //    semua user. Dokumen user lengkap kini tertutup untuk non-pemilik.
+    _publicProfilesSubscription = FirebaseFirestore.instance
+        .collection('public_profiles')
         .snapshots()
-        .listen((usersSnapshot) {
+        .listen((snapshot) {
       final List<PartyMember> members = [];
-      for (var uDoc in usersSnapshot.docs) {
-        final uData = uDoc.data();
-        final heroMap = uData['hero'] as Map<String, dynamic>?;
-        final email = uData['email'] ?? '';
-        final fullNameVal = uData['fullName'] ?? '';
-        String name = 'Unknown';
-        if (fullNameVal.toString().isNotEmpty) {
-          name = fullNameVal.toString();
-        } else if (email.toString().isNotEmpty) {
-          name = email.toString().split('@').first;
-        }
+      for (var pDoc in snapshot.docs) {
+        final data = pDoc.data();
+        final fullNameVal = (data['fullName'] ?? '').toString();
+        final usernameVal = (data['username'] ?? '').toString();
+        final name = fullNameVal.isNotEmpty
+            ? fullNameVal
+            : (usernameVal.isNotEmpty ? usernameVal : 'Hero');
 
-        if (heroMap != null) {
-          HeroClass parsedClass = HeroClass.warrior;
-          try {
-            parsedClass = HeroClass.values.firstWhere((e) => e.name == heroMap['heroClass']);
-          } catch (_) {}
+        HeroClass parsedClass = HeroClass.warrior;
+        try {
+          parsedClass = HeroClass.values.firstWhere((e) => e.name == data['heroClass']);
+        } catch (_) {}
 
-          members.add(PartyMember(
-            uid: uDoc.id,
-            name: name,
-            emoji: parsedClass == HeroClass.warrior
-                ? '⚔️'
-                : (parsedClass == HeroClass.mage
-                    ? '🧙'
-                    : (parsedClass == HeroClass.healer ? '💚' : '🏹')),
-            heroClass: parsedClass,
-            level: heroMap['level'] ?? 1,
-            xp: heroMap['xp'] ?? 0,
-            streak: heroMap['streak'] ?? 0,
-            avatarColor: parsedClass == HeroClass.warrior
-                ? AppColors.accent
-                : (parsedClass == HeroClass.mage
-                    ? const Color(0xFF185FA5)
-                    : (parsedClass == HeroClass.healer ? const Color(0xFF0F6E56) : const Color(0xFF854F0B))),
-          ));
-        }
+        members.add(PartyMember(
+          uid: pDoc.id,
+          name: name,
+          heroClass: parsedClass,
+          level: ((data['level'] ?? 1) as num).toInt(),
+          xp: ((data['xp'] ?? 0) as num).toInt(),
+          streak: ((data['streak'] ?? 0) as num).toInt(),
+          avatarColor: parsedClass == HeroClass.warrior
+              ? AppColors.accent
+              : (parsedClass == HeroClass.mage
+                  ? const Color(0xFF185FA5)
+                  : (parsedClass == HeroClass.healer ? const Color(0xFF0F6E56) : const Color(0xFF854F0B))),
+        ));
       }
       allUsers = members;
       _updatePartyMembersList();
     }, onError: (e) {
-      debugPrint("Error loading users stream: $e");
+      debugPrint("Error loading public profiles: $e");
     });
 
     // 3. Subscribe to invites
@@ -505,7 +600,7 @@ class AppState extends ChangeNotifier {
         .snapshots()
         .listen((snapshot) {
       if (snapshot.docs.isNotEmpty) {
-        globalQuests = snapshot.docs.map((doc) => QuestModel.fromMap(doc.data() as Map<String, dynamic>, doc.id)).toList();
+        globalQuests = snapshot.docs.map((doc) => QuestModel.fromMap(doc.data(), doc.id)).toList();
       } else {
         _populateDefaultGlobalQuests();
       }
@@ -521,20 +616,36 @@ class AppState extends ChangeNotifier {
         .snapshots()
         .listen((snapshot) {
       if (snapshot.docs.isNotEmpty) {
-        final newBosses = snapshot.docs.map((doc) => QuestModel.fromMap(doc.data() as Map<String, dynamic>, doc.id)).toList();
-        
+        final newBosses = snapshot.docs.map((doc) => QuestModel.fromMap(doc.data(), doc.id)).toList();
+        bool changed = false;
+
         for (var newB in newBosses) {
-          final oldB = globalBosses.firstWhere((b) => b.id == newB.id, orElse: () => newB);
-          if (newB.progress == 0 && oldB.progress > 0) {
-            if (!completedGlobalQuests.contains(newB.id)) {
-              completedGlobalQuests.add(newB.id);
-              addNotification("🎉 Boss ${newB.title} Berhasil Dikalahkan! (+${newB.xpReward} XP)");
-              _applyXp(newB.xpReward);
-              saveToFirestore();
-            }
+          final oldIdx = globalBosses.indexWhere((b) => b.id == newB.id);
+          if (oldIdx == -1) continue; // boss baru, belum ada transisi untuk dinilai
+          final oldB = globalBosses[oldIdx];
+
+          // Admin mengaktifkan boss lagi → buka kembali kesempatan award.
+          if (oldB.progress <= 0 && newB.progress > 0) {
+            completedGlobalQuests.remove(newB.id);
+          }
+
+          // Boss dikalahkan: HANYA user yang benar-benar menyerang yang dapat XP,
+          // dan hanya sekali. Mencegah XP "hantu" saat login (boss yang sudah mati
+          // sebelum user join) dan free-rider yang cuma online.
+          if (oldB.progress > 0 &&
+              newB.progress <= 0 &&
+              attackedBosses.contains(newB.id) &&
+              !completedGlobalQuests.contains(newB.id)) {
+            completedGlobalQuests.add(newB.id);
+            attackedBosses = List<String>.from(attackedBosses)..remove(newB.id);
+            addNotification("Boss ${newB.title} Berhasil Dikalahkan! (+${newB.xpReward} XP)");
+            _applyXp(newB.xpReward);
+            changed = true;
           }
         }
+
         globalBosses = newBosses;
+        if (changed) saveToFirestore();
       } else {
         _populateDefaultGlobalBosses();
       }
@@ -549,13 +660,38 @@ class AppState extends ChangeNotifier {
         .snapshots()
         .listen((snapshot) {
       if (snapshot.docs.isNotEmpty) {
-        shopItems = snapshot.docs.map((doc) => ShopItem.fromMap(doc.data() as Map<String, dynamic>, doc.id)).toList();
+        shopItems = snapshot.docs.map((doc) => ShopItem.fromMap(doc.data(), doc.id)).toList();
+        // Katalog global tidak menyimpan owned/equipped per-user; ambil dari
+        // dokumen user agar inventory milik pribadi, bukan dibagi semua orang.
+        _applyInventoryToShopItems();
       } else {
         _populateDefaultShopItems();
       }
       notifyListeners();
     }, onError: (e) {
       debugPrint("Error loading shop items: $e");
+    });
+
+    // 7. Subscribe to admin broadcasts → muncul sebagai notifikasi ke user.
+    _broadcastsSubscription = FirebaseFirestore.instance
+        .collection('broadcasts')
+        .orderBy('createdAt', descending: true)
+        .limit(20)
+        .snapshots()
+        .listen((snapshot) {
+      // Lewati snapshot pertama agar broadcast lama tidak muncul lagi saat login.
+      if (!_broadcastsInit) {
+        _broadcastsInit = true;
+        return;
+      }
+      for (final change in snapshot.docChanges) {
+        if (change.type == DocumentChangeType.added) {
+          final msg = (change.doc.data()?['message'] ?? '').toString();
+          if (msg.isNotEmpty) addNotification('Broadcast: $msg');
+        }
+      }
+    }, onError: (e) {
+      debugPrint("Error loading broadcasts: $e");
     });
   }
 
@@ -580,23 +716,53 @@ class AppState extends ChangeNotifier {
       if (partyDoc.exists) {
         final partyData = partyDoc.data();
         if (partyData != null) {
+          final memberIds = List<String>.from(partyData['memberIds'] ?? []);
+
+          // Dikeluarkan leader: user ini tak lagi terdaftar sebagai anggota.
+          // Bersihkan partyId DI DOKUMEN SENDIRI — aturan keamanan melarang leader
+          // menulis dokumen user lain, jadi korban yang membersihkan sendiri.
+          if (!memberIds.contains(currentUserId)) {
+            _clearOwnPartyId();
+            return;
+          }
+
           partyName = partyData['name'] ?? 'No Name';
           final leaderId = partyData['leaderId'] ?? '';
           isPartyLeader = (leaderId == currentUserId);
-          partyMemberIds = List<String>.from(partyData['memberIds'] ?? []);
+          partyMemberIds = memberIds;
           _updatePartyMembersList();
         }
       } else {
-        partyId = null;
-        partyName = null;
-        isPartyLeader = false;
-        partyMemberIds = [];
-        partyMembers = [];
-        notifyListeners();
+        // Party dibubarkan leader: dokumennya hilang → bersihkan partyId sendiri.
+        _clearOwnPartyId();
       }
     }, onError: (e) {
       debugPrint("Error loading party doc: $e");
     });
+  }
+
+  // Membersihkan partyId milik user ini (lokal + Firestore) saat ia dikeluarkan
+  // atau party dibubarkan. Owner boleh menulis dokumennya sendiri, jadi ini lolos
+  // aturan keamanan — beda dengan leader yang tak boleh menyentuh dokumen lain.
+  Future<void> _clearOwnPartyId() async {
+    final user = FirebaseAuth.instance.currentUser;
+    _partySubscription?.cancel();
+    _partySubscription = null;
+    partyId = null;
+    partyName = null;
+    isPartyLeader = false;
+    partyMemberIds = [];
+    partyMembers = [];
+    notifyListeners();
+    if (user == null) return;
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .update({'partyId': FieldValue.delete()});
+    } catch (e) {
+      debugPrint("Error clearing own partyId: $e");
+    }
   }
 
   void _syncGlobalQuestsToUser() {
@@ -671,29 +837,81 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ── Daily rollover & migrasi ─────────────────────────────────────────
+
+  // Kunci tanggal lokal (yyyy-MM-dd) untuk mendeteksi pergantian hari.
+  String _todayKey() => _dateKey(DateTime.now());
+
+  String _dateKey(DateTime n) {
+    final m = n.month.toString().padLeft(2, '0');
+    final d = n.day.toString().padLeft(2, '0');
+    return '${n.year}-$m-$d';
+  }
+
+  // Reset status "selesai" semua Daily saat hari berganti, sehingga tipe Daily
+  // benar-benar berulang. Hadiah login harian juga dibuka kembali.
+  void _maybeResetDailies() {
+    final today = _todayKey();
+
+    // Pengguna lama / sesi pertama: tandai hari ini tanpa menghapus progres.
+    if (lastDailyReset == null) {
+      lastDailyReset = today;
+      saveToFirestore();
+      return;
+    }
+
+    if (lastDailyReset == today) return;
+
+    for (final t in dailyTasks) {
+      t.isDone = false;
+      t.grantedXp = 0;
+      t.grantedGold = 0;
+    }
+    hasClaimedDaily = false;
+    lastDailyReset = today;
+    addNotification("Hari baru - Daily-mu sudah di-reset!");
+    saveToFirestore();
+  }
+
+  // Lebur nilai lama Knowledge & Focus ke Intelligence (atribut tunggal kini).
+  // Dijalankan sekali saat load; setelahnya kedua field selalu 0.
+  void _migrateLegacySkills() {
+    if (hero.knowledge != 0 || hero.focus != 0) {
+      hero.intelligence += hero.knowledge + hero.focus;
+      hero.knowledge = 0;
+      hero.focus = 0;
+      saveToFirestore();
+    }
+  }
+
   // ── Actions ──────────────────────────────────────────────────────────
 
   void claimDailyReward() {
-    if (!hasClaimedDaily) {
-      if (_isSfxOn) {
-        AudioHelper.playSfx();
-      }
-      hero.streak += 1;
-      hasClaimedDaily = true;
-      int goldReward = hero.streak * 15;
-      int gemReward = (hero.streak % 7 == 0) ? 5 : 1;
-      hero.gold += goldReward;
-      hero.gems += gemReward;
-      
-      hero.momentum = (hero.momentum + 20).clamp(0, 100);
+    if (hasClaimedDaily) return;
 
-      addNotification("📆 Daily Streak Claimed (+${hero.streak} Days)!");
-      addNotification("🪙 +$goldReward Gold / 💎 +$gemReward Gems");
-      addNotification("⚡ Momentum Restored!");
-      
-      notifyListeners();
-      saveToFirestore();
+    if (_isSfxOn) {
+      AudioHelper.playSfx();
     }
+
+    // Streak hanya berlanjut bila klaim terakhir tepat kemarin; bila ada hari
+    // yang terlewat (atau klaim pertama), streak dimulai lagi dari 1.
+    final yesterday = _dateKey(DateTime.now().subtract(const Duration(days: 1)));
+    hero.streak = (lastClaimDate == yesterday) ? hero.streak + 1 : 1;
+    lastClaimDate = _todayKey();
+    hasClaimedDaily = true;
+
+    final int goldReward = hero.streak * 15;
+    final int gemReward = (hero.streak % 7 == 0) ? 5 : 1;
+    hero.gold += goldReward;
+    hero.gems += gemReward;
+    hero.momentum = (hero.momentum + 20).clamp(0, 100);
+
+    addNotification("Daily Streak Claimed (+${hero.streak} Days)!");
+    addNotification("+$goldReward Gold / +$gemReward Gems");
+    addNotification("Momentum Restored!");
+
+    notifyListeners();
+    saveToFirestore();
   }
 
   void resetDailyClaim() {
@@ -716,7 +934,7 @@ class AppState extends ChangeNotifier {
       hero.hp = 150;
       hero.maxMp = 100;
       hero.mp = 100;
-      addNotification("🎉 LEVEL UP! Reached Level ${hero.level}");
+      addNotification("LEVEL UP! Reached Level ${hero.level}");
       saveToFirestore();
     }
   }
@@ -741,7 +959,7 @@ class AppState extends ChangeNotifier {
       hero.hp = 150;
       hero.maxMp = 100;
       hero.mp = 100;
-      addNotification("🎉 LEVEL UP! Reached Level ${hero.level}");
+      addNotification("LEVEL UP! Reached Level ${hero.level}");
     }
   }
 
@@ -761,19 +979,41 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  void _updateQuestProgress() {
+  // Memajukan satu quest (+20%) saat sebuah task diselesaikan, sambil mencatat
+  // PADA task quest mana yang dimajukan — agar bisa dikembalikan persis bila
+  // ceklis dibatalkan. Tanpa ini, ceklis→batal→ceklis berulang bisa di-"farm".
+  void _updateQuestProgress(TaskModel task) {
     for (var q in quests) {
       if (q.progress < 100) {
         q.progress = (q.progress + 20).clamp(0, 100);
-        addNotification("⚔️ Quest Progress Updated");
+        task.grantedQuestId = q.id;
+        addNotification("Quest Progress Updated");
         if (q.progress >= 100) {
           hero.totalQuestsCompleted += 1;
-          addNotification("🏆 Quest Completed: ${q.title}");
+          task.grantedQuestCompleted = true;
+          addNotification("Quest Completed: ${q.title}");
           _applyXp(q.xpReward);
         }
         break;
       }
     }
+  }
+
+  // Kebalikan persis dari [_updateQuestProgress] saat ceklis task dibatalkan.
+  void _reverseQuestProgress(TaskModel task) {
+    final qid = task.grantedQuestId;
+    if (qid == null) return;
+    final idx = quests.indexWhere((q) => q.id == qid);
+    if (idx != -1) {
+      final q = quests[idx];
+      if (task.grantedQuestCompleted) {
+        hero.totalQuestsCompleted = (hero.totalQuestsCompleted - 1).clamp(0, 999999);
+        _applyXp(-q.xpReward);
+      }
+      q.progress = (q.progress - 20).clamp(0, 100);
+    }
+    task.grantedQuestId = null;
+    task.grantedQuestCompleted = false;
   }
 
   void progressQuest(String id) {
@@ -782,69 +1022,66 @@ class AppState extends ChangeNotifier {
       final q = quests[idx];
       if (q.progress < 100) {
         q.progress = (q.progress + 20).clamp(0, 100);
-        addNotification("⚔️ Progres Quest '${q.title}' bertambah (+20%)");
+        addNotification("Progres Quest '${q.title}' bertambah (+20%)");
         if (q.progress >= 100) {
           hero.totalQuestsCompleted += 1;
-          addNotification("🏆 Quest Selesai: ${q.title} (+${q.xpReward} XP)");
+          addNotification("Quest Selesai: ${q.title} (+${q.xpReward} XP)");
           _applyXp(q.xpReward);
         }
         notifyListeners();
         saveToFirestore();
       } else {
-        addNotification("✨ Quest '${q.title}' sudah selesai!");
+        addNotification("Quest '${q.title}' sudah selesai!");
       }
     }
   }
 
   void attackGlobalBoss(String id) {
     final idx = globalBosses.indexWhere((b) => b.id == id);
-    if (idx != -1) {
-      final b = globalBosses[idx];
-      if (b.progress > 0) {
-        final newProg = (b.progress - 10).clamp(0, 100);
-        FirebaseFirestore.instance.collection('global_bosses').doc(id).update({
-          'progress': newProg,
-        });
+    if (idx == -1) return;
 
-        // Kurangi HP dari semua anggota party (atau user sendiri jika tidak ada party)
-        final List<String> targets = [];
-        if (partyId != null && partyId!.isNotEmpty && partyMemberIds.isNotEmpty) {
-          targets.addAll(partyMemberIds);
-        } else {
-          final currentUser = FirebaseAuth.instance.currentUser;
-          if (currentUser != null) {
-            targets.add(currentUser.uid);
-          }
-        }
-
-        final batch = FirebaseFirestore.instance.batch();
-        for (var uid in targets) {
-          final userDoc = FirebaseFirestore.instance.collection('users').doc(uid);
-          batch.update(userDoc, {
-            'hero.hp': FieldValue.increment(-10),
-          });
-        }
-        batch.commit().catchError((e) {
-          debugPrint("Error updating party members HP: $e");
-        });
-
-        addNotification("💥 Menyerang ${b.title}! HP berkurang (-10%)");
-      } else {
-        addNotification("💀 Boss ${b.title} sudah dikalahkan!");
-      }
+    final b = globalBosses[idx];
+    if (b.progress <= 0) {
+      addNotification("Boss ${b.title} sudah dikalahkan!");
+      return;
     }
+
+    // Progres boss bersama: aturan Firestore mengizinkan setiap user mengubah
+    // field 'progress' ini.
+    final newProg = (b.progress - 10).clamp(0, 100);
+    FirebaseFirestore.instance.collection('global_bosses').doc(id).update({
+      'progress': newProg,
+    });
+
+    // Tandai user ini sebagai peserta → syarat menerima XP saat boss tumbang.
+    if (!attackedBosses.contains(id)) {
+      attackedBosses = List<String>.from(attackedBosses)..add(id);
+    }
+
+    // Boss menyerang balik: HP penyerang berkurang. Setiap anggota party
+    // menyerang dari perangkatnya sendiri sehingga HP-nya berkurang sendiri —
+    // aturan Firestore tidak mengizinkan satu user menulis HP user lain.
+    hero.hp = (hero.hp - 10).clamp(0, hero.maxHp);
+    addNotification("Menyerang ${b.title}! HP-mu berkurang (-10)");
+
+    notifyListeners();
+    saveToFirestore();
   }
 
   void toggleTask(TaskModel task) {
     task.isDone = !task.isDone;
-    double mult = momentumMultiplier;
-    
+
     if (task.isDone) {
       if (_isSfxOn) {
         AudioHelper.playSfx();
       }
-      int xpGained = (task.xpReward * mult).toInt();
-      int goldGained = (task.goldReward * mult).toInt();
+      final double mult = momentumMultiplier;
+      final int xpGained = (task.xpReward * mult).toInt();
+      final int goldGained = (task.goldReward * mult).toInt();
+
+      // Catat reward aktual agar bisa dikembalikan persis saat ceklis dibatalkan.
+      task.grantedXp = xpGained;
+      task.grantedGold = goldGained;
 
       hero.gold += goldGained;
       hero.totalTasksCompleted += 1;
@@ -852,20 +1089,23 @@ class AppState extends ChangeNotifier {
 
       _incrementSkill(task.attribute);
       _applyXp(xpGained);
-      _updateQuestProgress();
+      _updateQuestProgress(task);
 
-      addNotification("✨ XP Gained (x$mult bonus!)");
-      addNotification("⚡ Gravity Resistance Increased");
+      addNotification("XP Gained (x$mult bonus!)");
+      addNotification("Gravity Resistance Increased");
     } else {
-      int xpLost = (task.xpReward * mult).toInt();
-      int goldLost = (task.goldReward * mult).toInt();
-
-      _applyXp(-xpLost);
-      hero.gold = (hero.gold - goldLost).clamp(0, 999999);
+      // Kembalikan tepat sebanyak yang dulu diberikan — bukan dihitung ulang
+      // dengan multiplier momentum yang mungkin sudah berbeda.
+      _applyXp(-task.grantedXp);
+      hero.gold = (hero.gold - task.grantedGold).clamp(0, 999999);
       hero.totalTasksCompleted = (hero.totalTasksCompleted - 1).clamp(0, 999999);
       hero.momentum = (hero.momentum - 15).clamp(0, 100);
 
       _decrementSkill(task.attribute);
+      _reverseQuestProgress(task);
+
+      task.grantedXp = 0;
+      task.grantedGold = 0;
     }
     notifyListeners();
     saveToFirestore();
@@ -885,15 +1125,15 @@ class AppState extends ChangeNotifier {
       _incrementSkill(habit.attribute);
       _applyXp(xpGained);
 
-      addNotification("✨ XP Increased!");
-      addNotification("🔥 Habit Streak Up!");
+      addNotification("XP Increased!");
+      addNotification("Habit Streak Up!");
     } else {
       hero.hp = (hero.hp - 6).clamp(0, hero.maxHp);
       hero.momentum = (hero.momentum - 20).clamp(0, 100);
       habit.streak = 0;
 
-      addNotification("💔 Health Reduced!");
-      addNotification("⚠️ Momentum Lost!");
+      addNotification("Health Reduced!");
+      addNotification("Momentum Lost!");
     }
     notifyListeners();
     saveToFirestore();
@@ -902,17 +1142,28 @@ class AppState extends ChangeNotifier {
   // Reward setelah menyelesaikan satu sesi Focus Mode.
   void completeFocusSession() {
     hero.gold += 20;
-    hero.focus += 5;
+    hero.intelligence += 5; // dulu menambah 'focus' (kini dilebur ke Intelligence)
     _applyXp(50);
-    addNotification("🎯 Focus Session Complete! (+50 XP / +20G)");
+    addNotification("Focus Session Complete! (+50 XP / +20G)");
     notifyListeners();
     saveToFirestore();
+  }
+
+  // Menyalin status inventory milik user (ownedItemIds/equippedItemIds) ke objek
+  // ShopItem dalam memori. Dipanggil setiap katalog global atau dokumen user
+  // dimuat ulang, agar kepemilikan bersifat per-akun & tahan restart.
+  void _applyInventoryToShopItems() {
+    for (final item in shopItems) {
+      item.owned = ownedItemIds.contains(item.id);
+      item.isEquipped = equippedItemIds.contains(item.id);
+    }
   }
 
   void buyItem(ShopItem item) {
     if (hero.gold >= item.price && !item.owned) {
       hero.gold -= item.price;
       item.owned = true;
+      if (!ownedItemIds.contains(item.id)) ownedItemIds.add(item.id);
       notifyListeners();
       saveToFirestore();
     }
@@ -922,6 +1173,8 @@ class AppState extends ChangeNotifier {
     if (item.owned) {
       item.owned = false;
       item.isEquipped = false;
+      ownedItemIds.remove(item.id);
+      equippedItemIds.remove(item.id);
       hero.gold += (item.price * 0.5).toInt();
       notifyListeners();
       saveToFirestore();
@@ -930,23 +1183,32 @@ class AppState extends ChangeNotifier {
 
   void equipItem(ShopItem item) {
     if (!item.owned) return;
-    
+
     if (item.category == ItemCategory.potion) {
       if (item.id == 's3') hero.hp = (hero.hp + 30).clamp(0, hero.maxHp);
       if (item.id == 's4') {
         _applyXp(100);
       }
       if (item.id == 's8') hero.mp = (hero.mp + 15).clamp(0, hero.maxMp);
-      
+
+      // Potion habis dipakai → keluar dari inventory user.
       item.owned = false;
+      ownedItemIds.remove(item.id);
+      equippedItemIds.remove(item.id);
     } else {
       if (item.isEquipped) {
         item.isEquipped = false;
+        equippedItemIds.remove(item.id);
       } else {
+        // Hanya satu item ter-equip per kategori.
         for (var i in shopItems) {
-          if (i.category == item.category) i.isEquipped = false;
+          if (i.category == item.category) {
+            i.isEquipped = false;
+            equippedItemIds.remove(i.id);
+          }
         }
         item.isEquipped = true;
+        if (!equippedItemIds.contains(item.id)) equippedItemIds.add(item.id);
       }
     }
     notifyListeners();
@@ -971,7 +1233,7 @@ class AppState extends ChangeNotifier {
     } else {
       todos.add(task);
     }
-    addNotification("🆕 Task Ditambahkan!");
+    addNotification("Task Ditambahkan!");
     notifyListeners();
     saveToFirestore();
   }
@@ -984,7 +1246,7 @@ class AppState extends ChangeNotifier {
     } else {
       todos.add(updatedTask);
     }
-    addNotification("✏️ Task Diperbarui!");
+    addNotification("Task Diperbarui!");
     notifyListeners();
     saveToFirestore();
   }
@@ -992,14 +1254,14 @@ class AppState extends ChangeNotifier {
   void deleteTask(String id) {
     dailyTasks.removeWhere((t) => t.id == id);
     todos.removeWhere((t) => t.id == id);
-    addNotification("🗑️ Task Dihapus");
+    addNotification("Task Dihapus");
     notifyListeners();
     saveToFirestore();
   }
 
   void addHabit(HabitModel habit) {
     habits.add(habit);
-    addNotification("🆕 Habit Ditambahkan!");
+    addNotification("Habit Ditambahkan!");
     notifyListeners();
     saveToFirestore();
   }
@@ -1008,7 +1270,7 @@ class AppState extends ChangeNotifier {
     final idx = habits.indexWhere((h) => h.id == updatedHabit.id);
     if (idx != -1) {
       habits[idx] = updatedHabit;
-      addNotification("✏️ Habit Diperbarui!");
+      addNotification("Habit Diperbarui!");
       notifyListeners();
       saveToFirestore();
     }
@@ -1016,7 +1278,7 @@ class AppState extends ChangeNotifier {
 
   void deleteHabit(String id) {
     habits.removeWhere((h) => h.id == id);
-    addNotification("🗑️ Habit Dihapus");
+    addNotification("Habit Dihapus");
     notifyListeners();
     saveToFirestore();
   }
@@ -1062,9 +1324,9 @@ class AppState extends ChangeNotifier {
       await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
         'partyId': partyRef.id,
       });
-      addNotification("🏰 Party '$name' Berhasil Dibuat!");
+      addNotification("Party '$name' Berhasil Dibuat!");
     } catch (e) {
-      addNotification("❌ Gagal membuat Party: $e");
+      addNotification("Gagal membuat Party: $e");
     }
   }
 
@@ -1075,9 +1337,9 @@ class AppState extends ChangeNotifier {
       await FirebaseFirestore.instance.collection('parties').doc(partyId).update({
         'invitedIds': FieldValue.arrayUnion([targetUid]),
       });
-      addNotification("✉️ Undangan Terkirim!");
+      addNotification("Undangan Terkirim!");
     } catch (e) {
-      addNotification("❌ Gagal mengirim undangan: $e");
+      addNotification("Gagal mengirim undangan: $e");
     }
   }
 
@@ -1088,12 +1350,12 @@ class AppState extends ChangeNotifier {
       await FirebaseFirestore.instance.collection('parties').doc(partyId).update({
         'memberIds': FieldValue.arrayRemove([targetUid]),
       });
-      await FirebaseFirestore.instance.collection('users').doc(targetUid).update({
-        'partyId': FieldValue.delete(),
-      });
-      addNotification("🗑️ Member Berhasil Dikeluarkan!");
+      // partyId di dokumen member yang dikeluarkan TIDAK ditulis dari sini —
+      // aturan keamanan melarang menulis dokumen user lain. Member yang
+      // dikeluarkan membersihkan partyId-nya sendiri lewat listener party-nya.
+      addNotification("Member Berhasil Dikeluarkan!");
     } catch (e) {
-      addNotification("❌ Gagal mengeluarkan member: $e");
+      addNotification("Gagal mengeluarkan member: $e");
     }
   }
 
@@ -1102,16 +1364,12 @@ class AppState extends ChangeNotifier {
     if (user == null || partyId == null) return;
     try {
       if (isPartyLeader) {
-        // Disband party: remove partyId for all members, then delete party doc.
-        final partyDoc = await FirebaseFirestore.instance.collection('parties').doc(partyId).get();
-        final memberIds = List<String>.from(partyDoc.data()?['memberIds'] ?? []);
-        for (var mid in memberIds) {
-          await FirebaseFirestore.instance.collection('users').doc(mid).update({
-            'partyId': FieldValue.delete(),
-          });
-        }
+        // Bubarkan: cukup hapus dokumen party (hanya leader yang boleh). Setiap
+        // anggota lain membersihkan partyId-nya sendiri begitu listener-nya
+        // melihat party sudah tiada — leader tak boleh menulis dokumen mereka.
         await FirebaseFirestore.instance.collection('parties').doc(partyId).delete();
-        addNotification("🏰 Party Dibubarkan!");
+        await _clearOwnPartyId();
+        addNotification("Party Dibubarkan!");
       } else {
         await FirebaseFirestore.instance.collection('parties').doc(partyId).update({
           'memberIds': FieldValue.arrayRemove([user.uid]),
@@ -1119,10 +1377,10 @@ class AppState extends ChangeNotifier {
         await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
           'partyId': FieldValue.delete(),
         });
-        addNotification("🚪 Keluar dari Party!");
+        addNotification("Keluar dari Party!");
       }
     } catch (e) {
-      addNotification("❌ Gagal keluar Party: $e");
+      addNotification("Gagal keluar Party: $e");
     }
   }
 
@@ -1137,9 +1395,9 @@ class AppState extends ChangeNotifier {
       await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
         'partyId': partyIdToAccept,
       });
-      addNotification("🤝 Berhasil Bergabung dengan Party!");
+      addNotification("Berhasil Bergabung dengan Party!");
     } catch (e) {
-      addNotification("❌ Gagal menerima undangan: $e");
+      addNotification("Gagal menerima undangan: $e");
     }
   }
 
@@ -1150,9 +1408,9 @@ class AppState extends ChangeNotifier {
       await FirebaseFirestore.instance.collection('parties').doc(partyIdToDecline).update({
         'invitedIds': FieldValue.arrayRemove([user.uid]),
       });
-      addNotification("🚷 Menolak Undangan.");
+      addNotification("Menolak Undangan.");
     } catch (e) {
-      addNotification("❌ Gagal menolak undangan: $e");
+      addNotification("Gagal menolak undangan: $e");
     }
   }
 
@@ -1198,12 +1456,13 @@ class AppState extends ChangeNotifier {
   @override
   void dispose() {
     _currentUserSubscription?.cancel();
-    _usersSubscription?.cancel();
+    _publicProfilesSubscription?.cancel();
     _partySubscription?.cancel();
     _invitesSubscription?.cancel();
     _globalQuestsSubscription?.cancel();
     _globalBossesSubscription?.cancel();
     _shopItemsSubscription?.cancel();
+    _broadcastsSubscription?.cancel();
     super.dispose();
   }
 }

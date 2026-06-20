@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_icons.dart';
 import 'login_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -14,19 +15,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   final List<_OnboardPage> _pages = const [
     _OnboardPage(
-      emoji: '⚔️',
+      icon: AppIcons.quest,
       title: 'Setiap tugas adalah\npetualangan',
       subtitle:
           'Selesaikan tugas kuliah, naikkan level karakter, dan taklukkan boss bersama party-mu.',
     ),
     _OnboardPage(
-      emoji: '🏆',
+      icon: AppIcons.trophy,
       title: 'Bangun kebiasaan\nseperti seorang hero',
       subtitle:
           'Catat habit harianmu. Setiap keberhasilan memberikan XP dan streak yang makin panjang.',
     ),
     _OnboardPage(
-      emoji: '⚡',
+      icon: AppIcons.party,
       title: 'Bergabung dengan\nparty-mu',
       subtitle:
           'Tantang boss deadline bersama teman satu kelompok dan bersaing di leaderboard.',
@@ -66,8 +67,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         ],
                       ),
                       child: Center(
-                        child: Text(_pages[_page].emoji,
-                            style: const TextStyle(fontSize: 64)),
+                        child: Icon(_pages[_page].icon,
+                            size: 64, color: AppColors.accent2),
                       ),
                     ),
                     const SizedBox(height: 32),
@@ -138,8 +139,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ),
                       child: Text(
                         _page < _pages.length - 1
-                            ? 'Lanjut →'
-                            : 'Mulai Petualangan →',
+                            ? 'Lanjut'
+                            : 'Mulai Petualangan',
                         style: const TextStyle(
                             fontSize: 15, fontWeight: FontWeight.w600),
                       ),
@@ -179,9 +180,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 }
 
 class _OnboardPage {
-  final String emoji;
+  final IconData icon;
   final String title;
   final String subtitle;
   const _OnboardPage(
-      {required this.emoji, required this.title, required this.subtitle});
+      {required this.icon, required this.title, required this.subtitle});
 }

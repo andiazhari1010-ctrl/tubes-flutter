@@ -46,7 +46,8 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
       var doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
       if (!doc.exists) {
         final email = user.email ?? '';
-        final roleVal = (email.toLowerCase().contains('admin') || email.toLowerCase().contains('tubaguslinggaap')) ? 'admin' : 'user';
+        // Pendaftaran mandiri selalu 'user'; promosi admin hanya lewat admin lain.
+        const roleVal = 'user';
         final username = email.isNotEmpty ? email.split('@').first : 'new_hero';
         final fullName = user.displayName ?? 'New Hero';
 
@@ -62,16 +63,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
         doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
       }
 
-      String role = doc.data()?['role'] ?? 'user';
-      final email = user.email ?? doc.data()?['email'] ?? '';
-      final isAdm = email.toLowerCase().contains('admin') || email.toLowerCase().contains('tubaguslinggaap');
-      if (isAdm && role != 'admin') {
-        role = 'admin';
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .update({'role': 'admin'});
-      }
+      final String role = doc.data()?['role'] ?? 'user';
 
       if (mounted) {
         if (role == 'admin') {
@@ -118,9 +110,6 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) throw 'Pengguna tidak ditemukan. Silakan login kembali.';
 
-      final email = user.email ?? '';
-      final isAdmEmail = email.toLowerCase().contains('admin') || email.toLowerCase().contains('tubaguslinggaap');
-
       DocumentSnapshot? doc;
       try {
         doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
@@ -137,7 +126,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
 
       if (mounted) Navigator.pop(context); // Close loading dialog
 
-      if (role == 'admin' || isAdmEmail) {
+      if (role == 'admin') {
         if (mounted) {
           Navigator.pushReplacement(
               context, MaterialPageRoute(builder: (_) => const AdminShell()));
@@ -147,7 +136,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('⚠️ Akses ditolak! Akun Anda bukan Administrator.'),
+              content: const Text('Akses ditolak! Akun Anda bukan Administrator.'),
               backgroundColor: AppColors.red,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
@@ -215,7 +204,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
                         ),
                       ],
                     ),
-                    child: const Center(child: Text('🏰', style: TextStyle(fontSize: 42))),
+                    child: Center(child: Icon(Icons.castle_rounded, size: 42, color: AppColors.accent2)),
                   ),
                   const SizedBox(height: 16),
                   RichText(
@@ -243,7 +232,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
 
                   // User card
                   _RoleCard(
-                    emoji: '⚔️',
+                    icon: Icons.sports_esports_rounded,
                     title: 'User',
                     subtitle:
                         'Mahasiswa yang ingin mengelola tugas, habits, dan bergabung dalam party.',
@@ -257,7 +246,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
 
                   // Admin card
                   _RoleCard(
-                    emoji: '🛡️',
+                    icon: Icons.shield_moon_rounded,
                     title: 'Admin',
                     subtitle:
                         'Kelola konten game, pantau statistik pengguna, dan moderasi aplikasi.',
@@ -281,7 +270,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
                       await FirebaseAuth.instance.signOut();
                     },
                     child: Text(
-                      '← Kembali ke Login',
+                      'Kembali ke Login',
                       style: TextStyle(fontSize: 12, color: AppColors.t3),
                     ),
                   ),
@@ -298,7 +287,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
 
 // ── Role Card ────────────────────────────────────────────────────────────────
 class _RoleCard extends StatefulWidget {
-  final String emoji;
+  final IconData icon;
   final String title;
   final String subtitle;
   final Color accentColor;
@@ -308,7 +297,7 @@ class _RoleCard extends StatefulWidget {
   final bool isAdmin;
 
   const _RoleCard({
-    required this.emoji,
+    required this.icon,
     required this.title,
     required this.subtitle,
     required this.accentColor,
@@ -361,7 +350,7 @@ class _RoleCardState extends State<_RoleCard> {
                     color: widget.accentColor.withValues(alpha: 0.3), width: 0.5),
               ),
               child: Center(
-                child: Text(widget.emoji, style: const TextStyle(fontSize: 26)),
+                child: Icon(widget.icon, size: 28, color: widget.accentColor),
               ),
             ),
             const SizedBox(width: 16),

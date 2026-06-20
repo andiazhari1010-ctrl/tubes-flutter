@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
+import '../../theme/app_icons.dart';
+import '../../models/models.dart';
 import '../../services/firestore_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
@@ -116,8 +118,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: AppColors.border, width: 0.5),
               ),
-              child: const Center(
-                child: Text('➕', style: TextStyle(fontSize: 16)),
+              child: Center(
+                child: Icon(AppIcons.add, size: 18, color: AppColors.t2),
               ),
             ),
           ),
@@ -271,16 +273,22 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
               ],
             ),
             const SizedBox(height: 20),
-            _detailRow('Class', '${user.classEmoji}  ${user.heroClass}'),
-            _detailRow('Level', 'Lv.${user.level}'),
-            _detailRow('Streak', '🔥 ${user.streak} hari'),
-            _detailRow('Gold', '🪙 ${user.gold}'),
+            _detailRow('Class', user.heroClass, icon: AppIcons.heroClass(user.heroClassEnum), iconColor: user.avatarColor),
+            _detailRow('Level', 'Lv.${user.level}', icon: AppIcons.level, iconColor: AppColors.gold),
+            _detailRow('Streak', '${user.streak} hari', icon: AppIcons.streak, iconColor: AppColors.warning),
+            _detailRow('Gold', '${user.gold}', icon: AppIcons.gold, iconColor: AppColors.gold),
             _detailRow(
                 'Status',
                 user.isBanned
-                    ? '🚫 Banned'
-                    : (user.isActive ? '🟢 Aktif' : '⚫ Tidak Aktif')),
-            _detailRow('Role', user.isAdmin ? '🛡️ Admin' : '⚔️ User'),
+                    ? 'Banned'
+                    : (user.isActive ? 'Aktif' : 'Tidak Aktif'),
+                icon: user.isBanned
+                    ? AppIcons.banned
+                    : (user.isActive ? Icons.check_circle_rounded : Icons.remove_circle_outline_rounded),
+                iconColor: user.isBanned
+                    ? AppColors.red
+                    : (user.isActive ? AppColors.xp : AppColors.t3)),
+            _detailRow('Role', user.isAdmin ? 'Admin' : 'User', icon: user.isAdmin ? AppIcons.admin : AppIcons.hero, iconColor: user.isAdmin ? AppColors.gold : AppColors.accent2),
             const SizedBox(height: 20),
             Row(
               children: [
@@ -393,6 +401,12 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                         try {
                           await FirebaseFirestore.instance
                               .collection('users')
+                              .doc(user.uid)
+                              .delete();
+                          // Bersihkan juga cermin profil publiknya agar tidak
+                          // tertinggal sebagai entri hantu di leaderboard.
+                          await FirebaseFirestore.instance
+                              .collection('public_profiles')
                               .doc(user.uid)
                               .delete();
                           if (context.mounted) {
@@ -606,13 +620,23 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                               .doc(userToEdit.uid)
                               .update({
                             'fullName': name,
-                            'email': email,
+                            'email': email.toLowerCase().trim(),
                             'role': roleVal,
                             'hero.name': name,
                             'hero.level': level,
                             'hero.streak': streak,
                             'hero.gold': gold,
                           });
+                          // Sinkronkan cermin profil publik (nama & stat yang
+                          // tampil di leaderboard) tanpa menimpa field lain.
+                          await FirebaseFirestore.instance
+                              .collection('public_profiles')
+                              .doc(userToEdit.uid)
+                              .set({
+                            'fullName': name,
+                            'level': level,
+                            'streak': streak,
+                          }, SetOptions(merge: true));
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
@@ -628,7 +652,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                               .collection('users')
                               .doc(newUid)
                               .set({
-                            'email': email,
+                            'email': email.toLowerCase().trim(),
                             'role': roleVal,
                             'username': email.split('@').first,
                             'fullName': name,
@@ -716,7 +740,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     );
   }
 
-  Widget _detailRow(String label, String value) {
+  Widget _detailRow(String label, String value, {IconData? icon, Color? iconColor}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
@@ -724,11 +748,19 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
         children: [
           Text(label,
               style: TextStyle(fontSize: 12, color: AppColors.t3)),
-          Text(value,
-              style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.t1)),
+          Row(
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 14, color: iconColor ?? AppColors.t2),
+                const SizedBox(width: 6),
+              ],
+              Text(value,
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.t1)),
+            ],
+          ),
         ],
       ),
     );
@@ -761,18 +793,16 @@ class _UserData {
     required this.isBanned,
   });
 
-  String get classEmoji {
+  HeroClass get heroClassEnum {
     switch (heroClass) {
-      case 'Warrior':
-        return '⚔️';
       case 'Mage':
-        return '🧙';
+        return HeroClass.mage;
       case 'Healer':
-        return '💚';
+        return HeroClass.healer;
       case 'Rogue':
-        return '🏹';
+        return HeroClass.rogue;
       default:
-        return '❓';
+        return HeroClass.warrior;
     }
   }
 
@@ -803,7 +833,7 @@ Widget _avatarCircle(_UserData u) {
       border: Border.all(color: u.avatarColor.withValues(alpha: 0.4), width: 0.5),
     ),
     child: Center(
-      child: Text(u.classEmoji, style: const TextStyle(fontSize: 18)),
+      child: Icon(AppIcons.heroClass(u.heroClassEnum), size: 18, color: u.avatarColor),
     ),
   );
 }
@@ -888,9 +918,18 @@ class _UserCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    'Lv.${user.level} · ${user.heroClass} · 🔥${user.streak}',
-                    style: TextStyle(fontSize: 10, color: AppColors.t3),
+                  Row(
+                    children: [
+                      Text(
+                        'Lv.${user.level} · ${user.heroClass} · ',
+                        style: TextStyle(fontSize: 10, color: AppColors.t3),
+                      ),
+                      Icon(AppIcons.streak, size: 10, color: AppColors.warning),
+                      Text(
+                        '${user.streak}',
+                        style: TextStyle(fontSize: 10, color: AppColors.t3),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -913,8 +952,14 @@ class _UserCard extends StatelessWidget {
                           color: statusColor)),
                 ),
                 const SizedBox(height: 5),
-                Text('Detail →',
-                    style: TextStyle(fontSize: 9, color: AppColors.accent2)),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Detail',
+                        style: TextStyle(fontSize: 9, color: AppColors.accent2)),
+                    Icon(Icons.chevron_right_rounded, size: 12, color: AppColors.accent2),
+                  ],
+                ),
               ],
             ),
           ],

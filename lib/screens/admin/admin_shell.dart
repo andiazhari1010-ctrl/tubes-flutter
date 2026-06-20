@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
+import '../../theme/app_icons.dart';
 import 'admin_dashboard_screen.dart';
 import 'admin_users_screen.dart';
 import 'admin_content_screen.dart';
@@ -50,28 +51,28 @@ class _AdminShellState extends State<AdminShell> {
             BottomNavigationBarItem(
               icon: Padding(
                 padding: EdgeInsets.only(bottom: 2),
-                child: Text('📊', style: TextStyle(fontSize: 20)),
+                child: Icon(Icons.dashboard_rounded, size: 22),
               ),
               label: 'DASHBOARD',
             ),
             BottomNavigationBarItem(
               icon: Padding(
                 padding: EdgeInsets.only(bottom: 2),
-                child: Text('👥', style: TextStyle(fontSize: 20)),
+                child: Icon(AppIcons.users, size: 22),
               ),
               label: 'USERS',
             ),
             BottomNavigationBarItem(
               icon: Padding(
                 padding: EdgeInsets.only(bottom: 2),
-                child: Text('🗡️', style: TextStyle(fontSize: 20)),
+                child: Icon(AppIcons.content, size: 22),
               ),
               label: 'KONTEN',
             ),
             BottomNavigationBarItem(
               icon: Padding(
                 padding: EdgeInsets.only(bottom: 2),
-                child: Text('📈', style: TextStyle(fontSize: 20)),
+                child: Icon(AppIcons.stats, size: 22),
               ),
               label: 'STATISTIK',
             ),
