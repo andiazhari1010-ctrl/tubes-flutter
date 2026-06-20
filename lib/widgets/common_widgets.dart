@@ -377,6 +377,17 @@ class TaskItem extends StatelessWidget {
                   bg: AppColors.t3.withValues(alpha: 0.12),
                   fg: AppColors.t3,
                 ),
+              if (onLongPress != null) ...[
+                const SizedBox(width: AppSpacing.sm),
+                GestureDetector(
+                  onTap: onLongPress,
+                  behavior: HitTestBehavior.opaque,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                    child: Icon(Icons.more_vert_rounded, size: 18, color: AppColors.t3),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -451,6 +462,17 @@ class HabitItem extends StatelessWidget {
                 _habitBtn(Icons.add_rounded, AppColors.xp, () => onAction(true)),
                 const SizedBox(width: AppSpacing.sm),
                 _habitBtn(Icons.remove_rounded, AppColors.red, () => onAction(false)),
+                if (onLongPress != null) ...[
+                  const SizedBox(width: AppSpacing.sm),
+                  GestureDetector(
+                    onTap: onLongPress,
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                      child: Icon(Icons.more_vert_rounded, size: 18, color: AppColors.t3),
+                    ),
+                  ),
+                ],
               ],
             ),
           ],
