@@ -305,7 +305,6 @@ enum TaskType { habit, daily, todo }
 class HabitModel {
   final String id;
   String title;
-  String emoji;
   int streak;
   int xpReward;
   SkillAttribute attribute;
@@ -313,7 +312,6 @@ class HabitModel {
   HabitModel({
     required this.id,
     required this.title,
-    required this.emoji,
     this.streak = 0,
     this.xpReward = 15,
     this.attribute = SkillAttribute.intelligence,
@@ -323,7 +321,6 @@ class HabitModel {
     return {
       'id': id,
       'title': title,
-      'emoji': emoji,
       'streak': streak,
       'xpReward': xpReward,
       'attribute': attribute.name,
@@ -336,7 +333,6 @@ class HabitModel {
     return HabitModel(
       id: map['id'] ?? '',
       title: map['title'] ?? '',
-      emoji: map['emoji'] ?? '',
       streak: map['streak'] ?? 0,
       xpReward: map['xpReward'] ?? 15,
       attribute: attrVal,
@@ -419,7 +415,6 @@ class ShopItem {
   final String id;
   final String name;
   final String description;
-  final String emoji;
   final int price;
   final ItemCategory category;
   final ItemRarity rarity;
@@ -431,7 +426,6 @@ class ShopItem {
     required this.id,
     required this.name,
     required this.description,
-    required this.emoji,
     required this.price,
     this.category = ItemCategory.potion,
     this.rarity = ItemRarity.common,
@@ -453,7 +447,6 @@ class ShopItem {
     return {
       'name': name,
       'description': description,
-      'emoji': emoji,
       'price': price,
       'category': category.name,
       'rarity': rarity.name,
@@ -484,7 +477,6 @@ class ShopItem {
       id: docId,
       name: map['name'] ?? '',
       description: map['description'] ?? '',
-      emoji: map['emoji'] ?? '',
       price: (map['price'] ?? 0) as int,
       category: catVal,
       rarity: rarVal,

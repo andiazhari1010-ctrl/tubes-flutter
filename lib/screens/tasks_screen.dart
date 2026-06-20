@@ -563,7 +563,6 @@ class TasksScreen extends StatelessWidget {
                             state.updateHabit(HabitModel(
                               id: habitToEdit.id,
                               title: title,
-                              emoji: habitToEdit.emoji,
                               streak: habitToEdit.streak,
                               xpReward: habitToEdit.xpReward,
                               attribute: attribute,
@@ -572,7 +571,6 @@ class TasksScreen extends StatelessWidget {
                             state.addHabit(HabitModel(
                               id: DateTime.now().millisecondsSinceEpoch.toString(),
                               title: title,
-                              emoji: '',
                               xpReward: 15,
                               attribute: attribute,
                             ));

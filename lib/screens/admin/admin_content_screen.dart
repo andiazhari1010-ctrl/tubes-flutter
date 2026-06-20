@@ -183,7 +183,6 @@ class _AdminContentScreenState extends State<AdminContentScreen>
                           id: newId,
                           name: title,
                           description: 'Item Baru',
-                          emoji: '',
                           price: val,
                           category: ItemCategory.armor,
                           rarity: ItemRarity.rare,

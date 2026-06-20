@@ -62,18 +62,17 @@ class AppState extends ChangeNotifier {
   List<QuestModel> quests = [];
 
   List<ShopItem> shopItems = [
-    ShopItem(id: 's1', name: 'Iron Sword', description: '+15 ATK · Pedang standar prajurit.', emoji: '🗡️', price: 80, category: ItemCategory.weapon, rarity: ItemRarity.common, bonuses: {'atk': 15}),
-    ShopItem(id: 's2', name: 'Study Shield', description: '+20 DEF · Melindungi dari deadline.', emoji: '🛡️', price: 120, category: ItemCategory.armor, rarity: ItemRarity.rare, bonuses: {'def': 20}),
-    ShopItem(id: 's3', name: 'HP Potion', description: 'Restore 30 HP', emoji: '🧪', price: 50, category: ItemCategory.potion, rarity: ItemRarity.common),
-    ShopItem(id: 's4', name: 'XP Scroll', description: '+100 XP instan', emoji: '📜', price: 200, category: ItemCategory.potion, rarity: ItemRarity.rare),
-    ShopItem(id: 's5', name: 'Wizard Hat', description: '+25 Mana · Topi penyihir bintang.', emoji: '🧙', price: 250, category: ItemCategory.armor, rarity: ItemRarity.epic, bonuses: {'mp': 25}),
-    ShopItem(id: 's6', name: 'Excalibur', description: '+100 ATK · Pedang legendaris.', emoji: '⚔️', price: 1500, category: ItemCategory.weapon, rarity: ItemRarity.legendary, bonuses: {'atk': 100}),
-    ShopItem(id: 's7', name: 'Titan Ring', description: '+10 Strength · Cincin raksasa.', emoji: '💍', price: 400, category: ItemCategory.accessory, rarity: ItemRarity.rare, bonuses: {'atk': 10, 'def': 10}),
-    ShopItem(id: 's8', name: 'Coffee Cup', description: 'Anti-Sleep · Restore 15 MP', emoji: '☕', price: 30, category: ItemCategory.potion, rarity: ItemRarity.common),
+    ShopItem(id: 's1', name: 'Iron Sword', description: '+15 ATK · Pedang standar prajurit.', price: 80, category: ItemCategory.weapon, rarity: ItemRarity.common, bonuses: {'atk': 15}),
+    ShopItem(id: 's2', name: 'Study Shield', description: '+20 DEF · Melindungi dari deadline.', price: 120, category: ItemCategory.armor, rarity: ItemRarity.rare, bonuses: {'def': 20}),
+    ShopItem(id: 's3', name: 'HP Potion', description: 'Restore 30 HP', price: 50, category: ItemCategory.potion, rarity: ItemRarity.common),
+    ShopItem(id: 's4', name: 'XP Scroll', description: '+100 XP instan', price: 200, category: ItemCategory.potion, rarity: ItemRarity.rare),
+    ShopItem(id: 's5', name: 'Wizard Hat', description: '+25 Mana · Topi penyihir bintang.', price: 250, category: ItemCategory.armor, rarity: ItemRarity.epic, bonuses: {'mp': 25}),
+    ShopItem(id: 's6', name: 'Excalibur', description: '+100 ATK · Pedang legendaris.', price: 1500, category: ItemCategory.weapon, rarity: ItemRarity.legendary, bonuses: {'atk': 100}),
+    ShopItem(id: 's7', name: 'Titan Ring', description: '+10 Strength · Cincin raksasa.', price: 400, category: ItemCategory.accessory, rarity: ItemRarity.rare, bonuses: {'atk': 10, 'def': 10}),
+    ShopItem(id: 's8', name: 'Coffee Cup', description: 'Anti-Sleep · Restore 15 MP', price: 30, category: ItemCategory.potion, rarity: ItemRarity.common),
   ];
 
   int get extraAtk => shopItems.where((i) => i.isEquipped).fold(0, (total, i) => total + (i.bonuses['atk'] ?? 0));
-  int get extraDef => shopItems.where((i) => i.isEquipped).fold(0, (total, i) => total + (i.bonuses['def'] ?? 0));
   List<PartyMember> partyMembers = [];
 
   // Global Quests (for Admin Content management & User views)
@@ -966,12 +965,6 @@ class AppState extends ChangeNotifier {
     saveToFirestore();
   }
 
-  void resetDailyClaim() {
-    hasClaimedDaily = false;
-    notifyListeners();
-    saveToFirestore();
-  }
-
   // Dipakai saat load data: normalisasi xp yang mungkin tersimpan >= 100.
   void _checkLevelUp() {
     bool leveledUp = false;
@@ -1550,14 +1543,14 @@ class AppState extends ChangeNotifier {
 
   Future<void> _populateDefaultShopItems() async {
     final defaultShopItems = [
-      ShopItem(id: 's1', name: 'Iron Sword', description: '+15 ATK · Pedang standar prajurit.', emoji: '🗡️', price: 80, category: ItemCategory.weapon, rarity: ItemRarity.common, bonuses: {'atk': 15}),
-      ShopItem(id: 's2', name: 'Study Shield', description: '+20 DEF · Melindungi dari deadline.', emoji: '🛡️', price: 120, category: ItemCategory.armor, rarity: ItemRarity.rare, bonuses: {'def': 20}),
-      ShopItem(id: 's3', name: 'HP Potion', description: 'Restore 30 HP', emoji: '🧪', price: 50, category: ItemCategory.potion, rarity: ItemRarity.common),
-      ShopItem(id: 's4', name: 'XP Scroll', description: '+100 XP instan', emoji: '📜', price: 200, category: ItemCategory.potion, rarity: ItemRarity.rare),
-      ShopItem(id: 's5', name: 'Wizard Hat', description: '+25 Mana · Topi penyihir bintang.', emoji: '🧙', price: 250, category: ItemCategory.armor, rarity: ItemRarity.epic, bonuses: {'mp': 25}),
-      ShopItem(id: 's6', name: 'Excalibur', description: '+100 ATK · Pedang legendaris.', emoji: '⚔️', price: 1500, category: ItemCategory.weapon, rarity: ItemRarity.legendary, bonuses: {'atk': 100}),
-      ShopItem(id: 's7', name: 'Titan Ring', description: '+10 Strength · Cincin raksasa.', emoji: '💍', price: 400, category: ItemCategory.accessory, rarity: ItemRarity.rare, bonuses: {'atk': 10, 'def': 10}),
-      ShopItem(id: 's8', name: 'Coffee Cup', description: 'Anti-Sleep · Restore 15 MP', emoji: '☕', price: 30, category: ItemCategory.potion, rarity: ItemRarity.common),
+      ShopItem(id: 's1', name: 'Iron Sword', description: '+15 ATK · Pedang standar prajurit.', price: 80, category: ItemCategory.weapon, rarity: ItemRarity.common, bonuses: {'atk': 15}),
+      ShopItem(id: 's2', name: 'Study Shield', description: '+20 DEF · Melindungi dari deadline.', price: 120, category: ItemCategory.armor, rarity: ItemRarity.rare, bonuses: {'def': 20}),
+      ShopItem(id: 's3', name: 'HP Potion', description: 'Restore 30 HP', price: 50, category: ItemCategory.potion, rarity: ItemRarity.common),
+      ShopItem(id: 's4', name: 'XP Scroll', description: '+100 XP instan', price: 200, category: ItemCategory.potion, rarity: ItemRarity.rare),
+      ShopItem(id: 's5', name: 'Wizard Hat', description: '+25 Mana · Topi penyihir bintang.', price: 250, category: ItemCategory.armor, rarity: ItemRarity.epic, bonuses: {'mp': 25}),
+      ShopItem(id: 's6', name: 'Excalibur', description: '+100 ATK · Pedang legendaris.', price: 1500, category: ItemCategory.weapon, rarity: ItemRarity.legendary, bonuses: {'atk': 100}),
+      ShopItem(id: 's7', name: 'Titan Ring', description: '+10 Strength · Cincin raksasa.', price: 400, category: ItemCategory.accessory, rarity: ItemRarity.rare, bonuses: {'atk': 10, 'def': 10}),
+      ShopItem(id: 's8', name: 'Coffee Cup', description: 'Anti-Sleep · Restore 15 MP', price: 30, category: ItemCategory.potion, rarity: ItemRarity.common),
     ];
     for (var i in defaultShopItems) {
       await FirebaseFirestore.instance.collection('shop_items').doc(i.id).set(i.toMap());

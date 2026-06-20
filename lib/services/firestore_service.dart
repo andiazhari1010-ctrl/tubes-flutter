@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-import '../models/models.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -93,78 +92,5 @@ class FirestoreService {
   // Stream all user documents for real-time updates
   Stream<QuerySnapshot<Map<String, dynamic>>> getAllUsersStream() {
     return _db.collection('users').snapshots();
-  }
-
-  // Aggregate total tasks completed across all users
-  Future<int> getTotalTasksCompleted() async {
-    final snapshot = await _db.collection('users').get();
-    int total = 0;
-    for (var doc in snapshot.docs) {
-      final data = doc.data();
-      total += (data['totalTasksCompleted'] ?? 0) as int;
-    }
-    return total;
-  }
-
-  // Aggregate total quests completed across all users
-  Future<int> getTotalQuestsCompleted() async {
-    final snapshot = await _db.collection('users').get();
-    int total = 0;
-    for (var doc in snapshot.docs) {
-      final data = doc.data();
-      total += (data['totalQuestsCompleted'] ?? 0) as int;
-    }
-    return total;
-  }
-
-  // Aggregate total XP across all users
-  Future<int> getTotalXp() async {
-    final snapshot = await _db.collection('users').get();
-    int total = 0;
-    for (var doc in snapshot.docs) {
-      final hero = doc.data()['hero'];
-      if (hero != null && hero is Map<String, dynamic>) {
-        total += (hero['xp'] ?? 0) as int;
-      }
-    }
-    return total;
-  }
-
-  // Count active users (example: streak > 0)
-  Future<int> getActiveUserCount() async {
-    final snapshot = await _db.collection('users').get();
-    int count = 0;
-    for (var doc in snapshot.docs) {
-      final hero = doc.data()['hero'];
-      if (hero != null && hero is Map<String, dynamic>) {
-        final streak = hero['streak'] ?? 0;
-        if ((streak as int) > 0) count++;
-      }
-    }
-    return count;
-  }
-
-  // Menyimpan perubahan data hero
-  Future<void> updateHeroData(String uid, HeroModel hero) async {
-    try {
-      await _db.collection('users').doc(uid).update({
-        'hero': {
-          'name': hero.name,
-          'heroClass': hero.heroClass.name,
-          'level': hero.level,
-          'hp': hero.hp,
-          'maxHp': hero.maxHp,
-          'xp': hero.xp,
-          'maxXp': hero.maxXp,
-          'mp': hero.mp,
-          'maxMp': hero.maxMp,
-          'gold': hero.gold,
-          'gems': hero.gems,
-          'streak': hero.streak,
-        }
-      });
-    } catch (e) {
-      debugPrint("Error updateHeroData: $e");
-    }
   }
 }
