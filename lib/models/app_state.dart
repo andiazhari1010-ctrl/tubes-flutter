@@ -6,6 +6,7 @@ import '../theme/app_theme.dart';
 import '../services/audio_service.dart';
 import '../models/models.dart';
 import 'dart:async';
+import 'dart:math';
 
 class AppState extends ChangeNotifier {
   // Real-time stream subscriptions
@@ -218,6 +219,13 @@ class AppState extends ChangeNotifier {
   List<String> ownedItemIds = [];
   List<String> equippedItemIds = [];
 
+  // ── Token Serang (Battle Token) ───────────────────────────────────────────
+  // Mata "energi" untuk menyerang Boss. Didapat dengan menyelesaikan task, agar
+  // serangan ke Boss adalah buah dari produktivitas — bukan tombol spam.
+  static const int tokenDailyCap = 3; // maksimum token yang bisa diperoleh per hari
+  int battleTokens = 0; // saldo token (akumulatif lintas hari)
+  int tokensEarnedToday = 0; // sudah diperoleh hari ini (di-reset tiap hari)
+
   bool _isDarkMode = true;
   bool _isMusicOn = true;
   bool _isSfxOn = true;
@@ -296,6 +304,8 @@ class AppState extends ChangeNotifier {
         attackedBosses = [];
         ownedItemIds = [];
         equippedItemIds = [];
+        battleTokens = 0;
+        tokensEarnedToday = 0;
         notifyListeners();
       }
     });
@@ -397,6 +407,8 @@ class AppState extends ChangeNotifier {
         'attackedBosses': attackedBosses,
         'ownedItemIds': ownedItemIds,
         'equippedItemIds': equippedItemIds,
+        'battleTokens': battleTokens,
+        'tokensEarnedToday': tokensEarnedToday,
         'partyId': partyId ?? FieldValue.delete(),
       }, SetOptions(merge: true));
     } catch (e) {
@@ -516,6 +528,8 @@ class AppState extends ChangeNotifier {
           equippedItemIds = data['equippedItemIds'] != null
               ? List<String>.from(data['equippedItemIds'])
               : [];
+          battleTokens = ((data['battleTokens'] ?? 0) as num).toInt();
+          tokensEarnedToday = ((data['tokensEarnedToday'] ?? 0) as num).toInt();
           _applyInventoryToShopItems();
           _maybeResetDailies();
           _syncGlobalQuestsToUser();
@@ -862,11 +876,49 @@ class AppState extends ChangeNotifier {
 
     if (lastDailyReset == today) return;
 
+    // ── Penalti HP untuk task yang terlewat (dihitung SEBELUM daily di-reset) ──
+    // Daily kemarin yang tak diselesaikan + To-Do yang sudah lewat deadline.
+    final prevWeekday =
+        DateTime.now().subtract(const Duration(days: 1)).weekday;
+    final now = DateTime.now();
+    final todayMidnight = DateTime(now.year, now.month, now.day);
+    int missed = 0;
+    for (final t in dailyTasks) {
+      if (!t.isDone && t.isActiveOn(prevWeekday)) missed += 1;
+    }
+    for (final t in todos) {
+      final d = t.deadline;
+      if (d != null && d.isBefore(todayMidnight) && !t.isDone && !t.overduePenalized) {
+        missed += 1;
+        t.overduePenalized = true;
+      }
+    }
+    if (missed > 0) {
+      int penalty = missed * 8;
+      // Warrior: "tahan banting" → penalti HP dipotong setengah.
+      if (hero.heroClass == HeroClass.warrior) penalty = (penalty * 0.5).round();
+      hero.hp = (hero.hp - penalty).clamp(0, hero.maxHp);
+      addNotification("HP -$penalty: $missed task terlewat deadline.");
+    }
+    // Healer: regenerasi HP tiap hari baru.
+    if (hero.heroClass == HeroClass.healer) {
+      final before = hero.hp;
+      hero.hp = (hero.hp + 15).clamp(0, hero.maxHp);
+      if (hero.hp > before) {
+        addNotification("Healer: +${hero.hp - before} HP regenerasi.");
+      }
+    }
+
     for (final t in dailyTasks) {
       t.isDone = false;
       t.grantedXp = 0;
       t.grantedGold = 0;
+      t.grantedQuestId = null;
+      t.grantedQuestCompleted = false;
+      t.grantedToken = false;
     }
+    // Kuota token harian dibuka lagi (saldo token TIDAK direset, tetap akumulatif).
+    tokensEarnedToday = 0;
     hasClaimedDaily = false;
     lastDailyReset = today;
     addNotification("Hari baru - Daily-mu sudah di-reset!");
@@ -1036,6 +1088,23 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  // Damage dasar ke Boss = base + Strength + senjata ter-equip + level. Makin
+  // tinggi atribut/gear/level, makin besar damage tiap serangan.
+  int _rawBossDamage() {
+    const base = 6;
+    final strBonus = hero.strength ~/ 4;   // atribut Strength
+    final weaponBonus = extraAtk ~/ 10;    // ATK dari senjata ter-equip
+    final levelBonus = hero.level ~/ 3;    // level keseluruhan
+    return base + strBonus + weaponBonus + levelBonus;
+  }
+
+  // Damage perkiraan (tanpa faktor acak Critical) untuk ditampilkan di UI.
+  int get bossDamagePreview {
+    var d = _rawBossDamage();
+    if (hero.heroClass == HeroClass.mage) d = (d * 1.5).round(); // Mage +50%
+    return d.clamp(1, 100);
+  }
+
   void attackGlobalBoss(String id) {
     final idx = globalBosses.indexWhere((b) => b.id == id);
     if (idx == -1) return;
@@ -1046,9 +1115,31 @@ class AppState extends ChangeNotifier {
       return;
     }
 
+    // Serangan butuh Token Serang. Token didapat dari menyelesaikan task →
+    // menyerang Boss menjadi reward produktivitas, bukan sekadar spam tombol.
+    if (battleTokens <= 0) {
+      addNotification("Token Serang habis! Selesaikan task untuk mendapatkannya.");
+      return;
+    }
+    battleTokens -= 1;
+
+    // Damage + modifier class:
+    //  • Mage  → damage ke Boss x1.5
+    //  • Rogue → 30% peluang Critical (x2)
+    var raw = _rawBossDamage();
+    double mult = 1.0;
+    bool crit = false;
+    if (hero.heroClass == HeroClass.mage) {
+      mult = 1.5;
+    } else if (hero.heroClass == HeroClass.rogue && Random().nextDouble() < 0.3) {
+      mult = 2.0;
+      crit = true;
+    }
+    final dmg = (raw * mult).round().clamp(1, 100);
+
     // Progres boss bersama: aturan Firestore mengizinkan setiap user mengubah
     // field 'progress' ini.
-    final newProg = (b.progress - 10).clamp(0, 100);
+    final newProg = (b.progress - dmg).clamp(0, 100);
     FirebaseFirestore.instance.collection('global_bosses').doc(id).update({
       'progress': newProg,
     });
@@ -1058,11 +1149,13 @@ class AppState extends ChangeNotifier {
       attackedBosses = List<String>.from(attackedBosses)..add(id);
     }
 
-    // Boss menyerang balik: HP penyerang berkurang. Setiap anggota party
-    // menyerang dari perangkatnya sendiri sehingga HP-nya berkurang sendiri —
-    // aturan Firestore tidak mengizinkan satu user menulis HP user lain.
-    hero.hp = (hero.hp - 10).clamp(0, hero.maxHp);
-    addNotification("Menyerang ${b.title}! HP-mu berkurang (-10)");
+    // Menyerang Boss TIDAK lagi mengurangi HP sendiri. HP hanya berkurang bila
+    // task daily/to-do terlewat deadline (lihat [_maybeResetDailies]).
+    if (crit) {
+      addNotification("CRITICAL HIT! ${b.title} -$dmg% HP (-1 Token)");
+    } else {
+      addNotification("Menyerang ${b.title}! -$dmg% HP (-1 Token)");
+    }
 
     notifyListeners();
     saveToFirestore();
@@ -1091,8 +1184,19 @@ class AppState extends ChangeNotifier {
       _applyXp(xpGained);
       _updateQuestProgress(task);
 
-      addNotification("XP Gained (x$mult bonus!)");
-      addNotification("Gravity Resistance Increased");
+      // Token Serang: 1 token per task, dibatasi [tokenDailyCap] per hari, agar
+      // serangan ke Boss adalah hasil produktivitas nyata.
+      if (tokensEarnedToday < tokenDailyCap) {
+        battleTokens += 1;
+        tokensEarnedToday += 1;
+        task.grantedToken = true;
+        addNotification("Token Serang +1 ($tokensEarnedToday/$tokenDailyCap hari ini)");
+      } else {
+        task.grantedToken = false;
+        addNotification("Batas Token Serang harian tercapai ($tokenDailyCap/$tokenDailyCap)");
+      }
+
+      addNotification("XP bertambah (x$mult bonus)");
     } else {
       // Kembalikan tepat sebanyak yang dulu diberikan — bukan dihitung ulang
       // dengan multiplier momentum yang mungkin sudah berbeda.
@@ -1103,6 +1207,13 @@ class AppState extends ChangeNotifier {
 
       _decrementSkill(task.attribute);
       _reverseQuestProgress(task);
+
+      // Tarik kembali token yang diberikan task ini (anti-farming, simetris).
+      if (task.grantedToken) {
+        battleTokens = (battleTokens - 1).clamp(0, 999999);
+        tokensEarnedToday = (tokensEarnedToday - 1).clamp(0, 999999);
+        task.grantedToken = false;
+      }
 
       task.grantedXp = 0;
       task.grantedGold = 0;

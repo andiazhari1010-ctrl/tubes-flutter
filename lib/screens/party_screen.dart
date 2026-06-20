@@ -99,6 +99,37 @@ class PartyScreen extends StatelessWidget {
                           '${state.partyMembers.length} anggota · Quest aktif: ${activeBosses.isEmpty ? "Tidak ada" : activeBosses.map((b) => b.title).join(", ")}',
                           style: TextStyle(fontSize: 11, color: AppColors.t3),
                         ),
+                        const SizedBox(height: 12),
+
+                        // ── Token Serang ────────────────────────────────────
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: AppColors.gold.withValues(alpha: 0.07),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.gold.withValues(alpha: 0.25), width: 0.5),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(AppIcons.token, size: 18, color: AppColors.gold),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Token Serang: ${state.battleTokens}',
+                                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.t1)),
+                                    const SizedBox(height: 1),
+                                    Text(
+                                      'Hari ini ${state.tokensEarnedToday}/${AppState.tokenDailyCap} · damage ≈${state.bossDamagePreview}% / serangan',
+                                      style: TextStyle(fontSize: 9, color: AppColors.t3),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                         const SizedBox(height: 14),
 
                         // Boss bar list
@@ -194,29 +225,38 @@ class PartyScreen extends StatelessWidget {
                                     },
                                   ),
                                   const SizedBox(height: 12),
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: ElevatedButton.icon(
-                                      onPressed: () {
-                                        state.attackGlobalBoss(boss.id);
-                                      },
-                                      icon: const Icon(AppIcons.attack, size: 16),
-                                      label: const Text(
-                                        'SERANG BOSS (-10% HP)',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12),
-                                      ),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: AppColors.red,
-                                        foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(vertical: 12),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
+                                  Builder(builder: (context) {
+                                    final canAttack = state.battleTokens > 0;
+                                    return SizedBox(
+                                      width: double.infinity,
+                                      child: ElevatedButton.icon(
+                                        onPressed: canAttack
+                                            ? () => state.attackGlobalBoss(boss.id)
+                                            : null,
+                                        icon: Icon(
+                                            canAttack ? AppIcons.attack : AppIcons.token,
+                                            size: 16),
+                                        label: Text(
+                                          canAttack
+                                              ? 'SERANG (1 Token · ≈${state.bossDamagePreview}% dmg)'
+                                              : 'Token habis · kerjakan task',
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12),
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: AppColors.red,
+                                          foregroundColor: Colors.white,
+                                          disabledBackgroundColor: AppColors.c3,
+                                          disabledForegroundColor: AppColors.t3,
+                                          padding: const EdgeInsets.symmetric(vertical: 12),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ),
+                                    );
+                                  }),
                                 ],
                               ),
                             );

@@ -12,10 +12,10 @@ class HeroScreen extends StatelessWidget {
   const HeroScreen({super.key});
 
   static const _classes = [
-    (HeroClass.warrior, 'Warrior', '+20% HP bonus. Tahan tugas berat.'),
-    (HeroClass.mage, 'Mage', '+20% XP bonus. Damage boss lebih.'),
-    (HeroClass.healer, 'Healer', 'HP regen. Buff anggota party.'),
-    (HeroClass.rogue, 'Rogue', '+25% Gold. Critical hit chance.'),
+    (HeroClass.warrior, 'Warrior', 'Tahan banting: penalti HP task telat -50%.'),
+    (HeroClass.mage, 'Mage', 'Damage ke Boss +50%.'),
+    (HeroClass.healer, 'Healer', 'Regenerasi +15 HP tiap hari baru.'),
+    (HeroClass.rogue, 'Rogue', '30% Critical: damage Boss x2.'),
   ];
 
   @override

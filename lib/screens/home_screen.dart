@@ -661,7 +661,7 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              _statExplainRow(AppIcons.hp, AppColors.hp, 'HP (Health Points)', 'Kesehatan Hero Anda. HP berkurang jika Anda mengabaikan quest/boss, dan dapat dipulihkan dengan ramuan (potion) dari toko.'),
+              _statExplainRow(AppIcons.hp, AppColors.hp, 'HP (Health Points)', 'Kesehatan Hero Anda. HP berkurang bila task daily/to-do terlewat deadline tanpa diselesaikan, atau gagal Habit. Pulihkan dengan potion. Menyerang Boss TIDAK mengurangi HP.'),
               const SizedBox(height: 12),
               _statExplainRow(AppIcons.xp, AppColors.xp, 'XP (Experience Points)', 'Poin Pengalaman. Kumpulkan 100 XP untuk naik level. XP akan tereset ke 0 setelah level naik.'),
               const SizedBox(height: 12),

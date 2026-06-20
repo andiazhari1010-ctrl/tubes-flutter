@@ -174,6 +174,12 @@ class TaskModel {
   // mencegah exploit "farming" lewat ceklis-batal berulang.
   String? grantedQuestId;
   bool grantedQuestCompleted;
+  // Apakah task ini sudah memberi 1 Token Serang (untuk menyerang Boss). Disimpan
+  // agar pembatalan ceklis menarik token kembali — anti-farming, sama seperti XP.
+  bool grantedToken;
+  // Apakah To-Do yang sudah lewat deadline ini SUDAH dikenai penalti HP. Agar
+  // satu To-Do telat hanya menghukum HP sekali, bukan tiap pergantian hari.
+  bool overduePenalized;
 
   TaskModel({
     required this.id,
@@ -189,6 +195,8 @@ class TaskModel {
     this.grantedGold = 0,
     this.grantedQuestId,
     this.grantedQuestCompleted = false,
+    this.grantedToken = false,
+    this.overduePenalized = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -206,6 +214,8 @@ class TaskModel {
       'grantedGold': grantedGold,
       'grantedQuestId': grantedQuestId,
       'grantedQuestCompleted': grantedQuestCompleted,
+      'grantedToken': grantedToken,
+      'overduePenalized': overduePenalized,
     };
   }
 
@@ -249,6 +259,14 @@ class TaskModel {
     return d.year == now.year && d.month == now.month && d.day == now.day;
   }
 
+  // Apakah To-Do ini sudah lewat deadline (sebelum hari ini)?
+  bool get isOverdue {
+    final d = deadline;
+    if (d == null) return false;
+    final now = DateTime.now();
+    return d.isBefore(DateTime(now.year, now.month, now.day));
+  }
+
   factory TaskModel.fromMap(Map<String, dynamic> map) {
     TaskPriority priorityVal = TaskPriority.medium;
     try {
@@ -276,6 +294,8 @@ class TaskModel {
       grantedGold: ((map['grantedGold'] ?? 0) as num).toInt(),
       grantedQuestId: map['grantedQuestId'] as String?,
       grantedQuestCompleted: map['grantedQuestCompleted'] ?? false,
+      grantedToken: map['grantedToken'] ?? false,
+      overduePenalized: map['overduePenalized'] ?? false,
     );
   }
 }

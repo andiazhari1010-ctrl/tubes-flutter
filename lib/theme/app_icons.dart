@@ -72,6 +72,7 @@ class AppIcons {
   static const IconData quest = Icons.menu_book_rounded;
   static const IconData boss = Icons.dangerous_rounded;
   static const IconData attack = Icons.flash_on_rounded;
+  static const IconData token = Icons.confirmation_number_rounded;
   static const IconData trophy = Icons.emoji_events_rounded;
   static const IconData shield = Icons.shield_outlined;
   static const IconData broadcast = Icons.campaign_rounded;
